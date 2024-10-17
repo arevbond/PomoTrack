@@ -5,21 +5,30 @@ import (
 	"testing"
 	"time"
 
+	"github.com/arevbond/PomoTrack/config"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+)
+
+const (
+	focusDuration = 10 * time.Second
+	breakDuration = 3 * time.Second
 )
 
 func TestNewStateManager(t *testing.T) {
 	focusTimer, breakTimer := NewFocusTimer(focusDuration), NewBreakTimer(breakDuration)
 	stateChan := make(chan StateChangeEvent)
-	stateManager := NewStateManager(slog.Default(), focusTimer, breakTimer, stateChan)
+	stateManager := NewStateManager(slog.Default(), focusTimer, breakTimer, stateChan,
+		config.TimerConfig{FocusDuration: focusDuration, BreakDuration: breakDuration})
 	require.Equal(t, StatePaused, stateManager.CurrentState())
 }
 
 func TestStateManager_SetState(t *testing.T) {
 	focusTimer, breakTimer := NewFocusTimer(focusDuration), NewBreakTimer(breakDuration)
 	stateChan := make(chan StateChangeEvent)
-	stateManager := NewStateManager(slog.Default(), focusTimer, breakTimer, stateChan)
+	stateManager := NewStateManager(slog.Default(), focusTimer, breakTimer, stateChan,
+		config.TimerConfig{FocusDuration: focusDuration, BreakDuration: breakDuration})
 
 	go func() {
 		event := <-stateChan
@@ -37,7 +46,8 @@ func TestStateManager_SetState(t *testing.T) {
 func TestStateManager_StartTimer(t *testing.T) {
 	focusTimer, breakTimer := NewFocusTimer(2*time.Second), NewBreakTimer(breakDuration)
 	stateChan := make(chan StateChangeEvent)
-	stateManager := NewStateManager(slog.Default(), focusTimer, breakTimer, stateChan)
+	stateManager := NewStateManager(slog.Default(), focusTimer, breakTimer, stateChan,
+		config.TimerConfig{FocusDuration: focusDuration, BreakDuration: breakDuration})
 
 	stateManager.startTimer(focusTimer)
 	time.Sleep(3 * time.Second)
@@ -47,7 +57,8 @@ func TestStateManager_StartTimer(t *testing.T) {
 func TestStateManager_PauseTimer(t *testing.T) {
 	focusTimer, breakTimer := NewFocusTimer(10*time.Second), NewBreakTimer(breakDuration)
 	stateChan := make(chan StateChangeEvent)
-	stateManager := NewStateManager(slog.Default(), focusTimer, breakTimer, stateChan)
+	stateManager := NewStateManager(slog.Default(), focusTimer, breakTimer, stateChan,
+		config.TimerConfig{FocusDuration: focusDuration, BreakDuration: breakDuration})
 
 	stateManager.focusTimer.Run()
 	time.Sleep(1 * time.Second)
@@ -60,7 +71,8 @@ func TestStateManager_PauseTimer(t *testing.T) {
 func TestStateManager_FinishTimer(t *testing.T) {
 	focusTimer, breakTimer := NewFocusTimer(focusDuration), NewBreakTimer(breakDuration)
 	stateChan := make(chan StateChangeEvent)
-	stateManager := NewStateManager(slog.Default(), focusTimer, breakTimer, stateChan)
+	stateManager := NewStateManager(slog.Default(), focusTimer, breakTimer, stateChan,
+		config.TimerConfig{FocusDuration: focusDuration, BreakDuration: breakDuration})
 
 	stateManager.focusTimer.Run()
 	time.Sleep(3 * time.Second)

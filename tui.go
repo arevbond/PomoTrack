@@ -4,6 +4,8 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/arevbond/PomoTrack/config"
+
 	"github.com/gdamore/tcell/v2"
 
 	"github.com/rivo/tview"
@@ -21,12 +23,7 @@ const (
 
 const screenRefreshInterval = 1 * time.Second
 
-const (
-	focusDuration = 10 * time.Second
-	breakDuration = 3 * time.Second
-)
-
-type taskManagerInterface interface {
+type taskMngr interface {
 	HandleTaskStateChanges()
 	TodayTasks() ([]*Task, error)
 	Tasks(limit int) ([]*Task, error)
@@ -39,7 +36,7 @@ type UIManager struct {
 	stateManager    *StateManager
 	stateChangeChan chan StateChangeEvent
 
-	taskManager   taskManagerInterface
+	taskManager   taskMngr
 	stateTaskChan chan StateChangeEvent
 }
 
@@ -48,20 +45,19 @@ type StateChangeEvent struct {
 	NewState  TimerState
 }
 
-func NewUIManager(logger *slog.Logger, stateTaskChan chan StateChangeEvent,
-	taskManager taskManagerInterface) *UIManager {
+func NewUIManager(logger *slog.Logger, cfg *config.Config, events chan StateChangeEvent, tm taskMngr) *UIManager {
 	stateChangeChan := make(chan StateChangeEvent)
-	focusTimer := NewFocusTimer(focusDuration)
-	breakTimer := NewBreakTimer(breakDuration)
+	focusTimer := NewFocusTimer(cfg.Timer.FocusDuration)
+	breakTimer := NewBreakTimer(cfg.Timer.BreakDuration)
 
 	return &UIManager{
 		ui:              tview.NewApplication(),
 		pages:           tview.NewPages(),
 		logger:          logger,
-		stateManager:    NewStateManager(logger, focusTimer, breakTimer, stateChangeChan),
+		stateManager:    NewStateManager(logger, focusTimer, breakTimer, stateChangeChan, cfg.Timer),
 		stateChangeChan: stateChangeChan,
-		taskManager:     taskManager,
-		stateTaskChan:   stateTaskChan,
+		taskManager:     tm,
+		stateTaskChan:   events,
 	}
 }
 

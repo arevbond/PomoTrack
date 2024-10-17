@@ -3,6 +3,8 @@ package main
 import (
 	"embed"
 	"log/slog"
+
+	"github.com/arevbond/PomoTrack/config"
 )
 
 //go:embed assets
@@ -13,7 +15,7 @@ type Application struct {
 	logger    *slog.Logger
 }
 
-func NewApplication(logger *slog.Logger) *Application {
+func NewApplication(logger *slog.Logger, cfg *config.Config) *Application {
 	storage, err := newStorage("database.db")
 	if err != nil {
 		panic(err)
@@ -23,7 +25,7 @@ func NewApplication(logger *slog.Logger) *Application {
 
 	app := &Application{
 		logger:    logger,
-		uiManager: NewUIManager(logger, stateTaskChan, NewTaskManager(logger, storage, stateTaskChan)),
+		uiManager: NewUIManager(logger, cfg, stateTaskChan, NewTaskManager(logger, storage, stateTaskChan)),
 	}
 
 	app.uiManager.DefaultTimerPages()

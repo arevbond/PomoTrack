@@ -3,6 +3,8 @@ package main
 import (
 	"log/slog"
 	"time"
+
+	"github.com/arevbond/PomoTrack/config"
 )
 
 type TimerState int
@@ -19,15 +21,18 @@ type StateManager struct {
 	breakTimer   *Timer
 	stateChan    chan StateChangeEvent
 	logger       *slog.Logger
+	timerConfig  config.TimerConfig
 }
 
-func NewStateManager(l *slog.Logger, focusT *Timer, breakT *Timer, stateChan chan StateChangeEvent) *StateManager {
+func NewStateManager(l *slog.Logger, focusT *Timer, breakT *Timer,
+	stateChan chan StateChangeEvent, cfg config.TimerConfig) *StateManager {
 	return &StateManager{
 		logger:       l,
 		currentState: StatePaused,
 		focusTimer:   focusT,
 		breakTimer:   breakT,
 		stateChan:    stateChan,
+		timerConfig:  cfg,
 	}
 }
 
@@ -84,9 +89,9 @@ func (sm *StateManager) finishTimer(timer *Timer) {
 	var duration time.Duration
 	switch timer.timerType {
 	case FocusTimer:
-		duration = focusDuration
+		duration = sm.timerConfig.FocusDuration
 	case BreakTimer:
-		duration = breakDuration
+		duration = sm.timerConfig.BreakDuration
 	}
 
 	timer.Reset(duration)
