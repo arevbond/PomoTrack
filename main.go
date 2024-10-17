@@ -5,15 +5,23 @@ import (
 	"log"
 	"log/slog"
 	"os"
+
+	"github.com/arevbond/PomoTrack/config"
 )
 
 func main() {
 	logger, err := initLogger("app.log")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
-	app := NewApplication(logger)
+	cfg, err := config.Init()
+	if err != nil {
+		logger.Error("can't initialization config", slog.Any("error", err))
+		os.Exit(1)
+	}
+
+	app := NewApplication(logger, cfg)
 
 	if err = app.uiManager.ui.SetRoot(app.uiManager.pages, true).
 		SetFocus(app.uiManager.pages).Run(); err != nil {

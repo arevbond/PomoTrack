@@ -1,0 +1,3 @@
+timer:
+    focus_duration: 10s
+    break_duration: 5s
