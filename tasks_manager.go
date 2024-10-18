@@ -56,6 +56,10 @@ func (tm *TaskManager) TodayTasks() ([]*Task, error) {
 	return tm.storage.GetTodayTasks()
 }
 
+func (tm *TaskManager) RemoveTask(id int) error {
+	return tm.storage.RemoveTask(id)
+}
+
 func (tm *TaskManager) handleStartTask() {
 	// предыдущая задача не создана или завершена
 	// создаём новую пустую задачу

@@ -41,6 +41,16 @@ func (s *Storage) UpdateTask(task *Task) error {
 	return nil
 }
 
+func (s *Storage) RemoveTask(id int) error {
+	query := `DELETE FROM tasks WHERE id = ?`
+
+	_, err := s.DB.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("can't remove task: %w", err)
+	}
+	return nil
+}
+
 func (s *Storage) GetTasks(limit int) ([]*Task, error) {
 	query := `SELECT id, start_at, finish_at, duration
 			FROM tasks
