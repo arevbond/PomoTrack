@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -116,13 +117,13 @@ func (uim *UIManager) pageStatistics(start, end int, tasks []*Task) {
 		SetDynamicColors(true)
 
 	grid := tview.NewGrid().
-		SetRows(3, 0, 1, 1).      // Добавляем строки для текста, таблицы и кнопок
-		SetColumns(0, 25, 25, 0). // Определяем 4 столбца: 0 — для отступов, 25 — для кнопок
+		SetRows(3, 0, 1, 1).
+		SetColumns(0, 25, 25, 0).
 		SetBorders(true)
 
 	grid.AddItem(text, 0, 1, 1, 2, 0, 0, false)
 
-	grid.AddItem(table, 1, 1, 1, 2, 0, 0, false)
+	grid.AddItem(table, 1, 1, 1, 2, 0, 0, true)
 
 	if prevButton != nil {
 		grid.AddItem(prevButton, 2, 1, 1, 1, 0, 0, true)
@@ -131,44 +132,123 @@ func (uim *UIManager) pageStatistics(start, end int, tasks []*Task) {
 		grid.AddItem(nextButton, 2, 2, 1, 1, 0, 0, true)
 	}
 
-	if nextButton != nil || prevButton != nil {
-		grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-			switch event.Key() {
-			case tcell.KeyTAB, tcell.KeyLeft, tcell.KeyRight:
-				if uim.ui.GetFocus() == prevButton && nextButton != nil {
-					uim.ui.SetFocus(nextButton)
-				} else if uim.ui.GetFocus() == nextButton && prevButton != nil {
+	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyTAB:
+			if uim.ui.GetFocus() == prevButton || uim.ui.GetFocus() == nextButton {
+				uim.ui.SetFocus(table)
+			} else {
+				if prevButton != nil {
 					uim.ui.SetFocus(prevButton)
+				} else if nextButton != nil {
+					uim.ui.SetFocus(nextButton)
 				}
-			default:
 			}
-			return event
-		})
-	}
+		case tcell.KeyLeft, tcell.KeyRight:
+			if uim.ui.GetFocus() == prevButton && nextButton != nil {
+				uim.ui.SetFocus(nextButton)
+			} else if uim.ui.GetFocus() == nextButton && prevButton != nil {
+				uim.ui.SetFocus(prevButton)
+			}
+		default:
+		}
+		return event
+	})
 
 	uim.pages.AddPage(pageNameStatistics, grid, true, false)
 }
 
 func (uim *UIManager) statisticsTable(start, end int, tasks []*Task) *tview.Table {
-	table := tview.NewTable().
-		SetBorders(true)
+	table := tview.NewTable().SetBorders(true)
+	headers := []string{"Date", "Time", "Seconds", "Action"}
 
-	table.SetCell(0, 0, tview.NewTableCell("Date").SetAlign(tview.AlignCenter))
-	table.SetCell(0, 1, tview.NewTableCell("Time").SetAlign(tview.AlignCenter))
-	table.SetCell(0, 2, tview.NewTableCell("Seconds").SetAlign(tview.AlignCenter))
-
-	for i, t := range tasks[start:end] {
-		dateStr := t.StartAt.Format("02-Jan-2006")
-		table.SetCell(i+1, 0, tview.NewTableCell(dateStr).SetAlign(tview.AlignCenter))
-
-		const timeFormat = "15:04:05"
-		timeStr := fmt.Sprintf("%s-%s", t.StartAt.Format(timeFormat), t.FinishAt.Format(timeFormat))
-		table.SetCell(i+1, 1, tview.NewTableCell(timeStr).SetAlign(tview.AlignCenter))
-
-		table.SetCell(i+1, 2, tview.NewTableCell(strconv.Itoa(t.Duration)).SetAlign(tview.AlignCenter))
+	for col, header := range headers {
+		table.SetCell(0, col, tview.NewTableCell(header).SetAlign(tview.AlignCenter))
 	}
 
+	for i, t := range tasks[start:end] {
+		row := i + 1
+
+		dateStr := t.StartAt.Format("02-Jan-2006")
+		const timeFormat = "15:04:05"
+		timeStr := fmt.Sprintf("%s-%s", t.StartAt.Format(timeFormat), t.FinishAt.Format(timeFormat))
+
+		table.SetCell(row, 0, tview.NewTableCell(dateStr).SetAlign(tview.AlignCenter))
+		table.SetCell(row, 1, tview.NewTableCell(timeStr).SetAlign(tview.AlignCenter))
+		table.SetCell(row, 2, tview.NewTableCell(strconv.Itoa(t.Duration)).SetAlign(tview.AlignCenter))
+		table.SetCell(row, 3, tview.NewTableCell("[red] Delete [-]").SetAlign(tview.AlignCenter).SetSelectable(true))
+	}
+
+	table.SetInputCapture(uim.createTableInputCapture(table, tasks))
 	return table
+}
+
+func (uim *UIManager) createTableInputCapture(table *tview.Table, tasks []*Task) func(*tcell.EventKey) *tcell.EventKey {
+	return func(event *tcell.EventKey) *tcell.EventKey {
+		row, col := table.GetSelection()
+
+		switch event.Key() {
+		case tcell.KeyEnter:
+			uim.handleEnterKey(table, tasks, col)
+		case tcell.KeyDown, tcell.KeyUp:
+			uim.handleVerticalNavigation(table, row, col, event.Key())
+		case tcell.KeyLeft, tcell.KeyRight:
+			if col != 3 {
+				table.Select(row, 3)
+			}
+		case tcell.KeyCtrlY:
+			if col == 3 && row > 0 {
+				uim.removeTask(tasks, row-1)
+			}
+		case tcell.KeyEscape:
+			table.Select(0, 0).SetSelectable(false, false)
+		default:
+			return event
+		}
+
+		return nil
+	}
+}
+
+func (uim *UIManager) handleEnterKey(table *tview.Table, tasks []*Task, col int) {
+	if len(tasks) > 0 && col != 3 {
+		table.Select(1, 3).SetSelectable(true, true)
+	} else if col == 3 {
+		table.Select(0, 0).SetSelectable(false, false)
+	}
+}
+
+func (uim *UIManager) handleVerticalNavigation(table *tview.Table, row, col int, key tcell.Key) {
+	switch key {
+	case tcell.KeyDown:
+		if row < table.GetRowCount()-1 {
+			table.Select(row+1, col)
+		} else {
+			table.Select(1, col)
+		}
+	case tcell.KeyUp:
+		if row > 1 {
+			table.Select(row-1, col)
+		} else {
+			table.Select(table.GetRowCount()-1, col)
+		}
+	default:
+	}
+}
+
+func (uim *UIManager) removeTask(tasks []*Task, indx int) {
+	err := uim.taskManager.RemoveTask(tasks[indx].ID)
+	if err != nil {
+		uim.logger.Error("Can't delete task", slog.Any("id", tasks[indx].ID))
+	}
+
+	tasks = append(tasks[:indx], tasks[indx+1:]...)
+	if len(tasks) > 5 {
+		uim.pageStatistics(0, 5, tasks)
+	} else {
+		uim.pageStatistics(0, len(tasks), tasks)
+	}
+	uim.pages.SwitchToPage(pageNameStatistics)
 }
 
 func (uim *UIManager) totalDuration(tasks []*Task) string {

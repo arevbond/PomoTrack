@@ -11,7 +11,7 @@ type Storage struct {
 	DB *sql.DB
 }
 
-func newStorage(filename string) (*Storage, error) {
+func NewStorage(filename string) (*Storage, error) {
 	db, err := sql.Open("sqlite3", filename)
 	if err != nil {
 		return nil, fmt.Errorf("can't connect to db: %w", err)

@@ -27,6 +27,7 @@ type taskMngr interface {
 	HandleTaskStateChanges()
 	TodayTasks() ([]*Task, error)
 	Tasks(limit int) ([]*Task, error)
+	RemoveTask(id int) error
 }
 
 type UIManager struct {

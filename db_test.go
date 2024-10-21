@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 
 func setup() error {
 	var err error
-	s, err = newStorage(testDBName)
+	s, err = NewStorage(testDBName)
 	if err != nil {
 		return err
 	}
