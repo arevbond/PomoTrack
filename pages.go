@@ -89,27 +89,9 @@ func (uim *UIManager) pageActiveTimer(pageName string, color, title string, time
 }
 
 func (uim *UIManager) pageStatistics(start, end int, tasks []*Task) {
-	var nextButton *tview.Button
-	var prevButton *tview.Button
 	table := uim.statisticsTable(start, end, tasks)
 
-	const pageSize = 5
-	if start >= pageSize {
-		prevButton = tview.NewButton("Prev").SetSelectedFunc(func() {
-			uim.pageStatistics(start-pageSize, start, tasks)
-			uim.pages.SwitchToPage(pageNameStatistics)
-		})
-	}
-	if end < len(tasks) {
-		nextButton = tview.NewButton("Next").SetSelectedFunc(func() {
-			if end+5 < len(tasks) {
-				uim.pageStatistics(end, end+pageSize, tasks)
-			} else {
-				uim.pageStatistics(end, len(tasks), tasks)
-			}
-			uim.pages.SwitchToPage(pageNameStatistics)
-		})
-	}
+	buttons := uim.createStatisticsButtons(start, end, tasks)
 
 	text := tview.NewTextView().
 		SetTextAlign(tview.AlignCenter).
@@ -125,37 +107,81 @@ func (uim *UIManager) pageStatistics(start, end int, tasks []*Task) {
 
 	grid.AddItem(table, 1, 1, 1, 2, 0, 0, true)
 
-	if prevButton != nil {
-		grid.AddItem(prevButton, 2, 1, 1, 1, 0, 0, true)
-	}
-	if nextButton != nil {
-		grid.AddItem(nextButton, 2, 2, 1, 1, 0, 0, true)
+	for i, button := range buttons {
+		grid.AddItem(button, 2, i+1, 1, 1, 0, 0, true)
 	}
 
-	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	grid.SetInputCapture(uim.inputCapturePageStats(table, buttons))
+
+	uim.pages.AddPage(pageNameStatistics, grid, true, false)
+}
+
+func (uim *UIManager) inputCapturePageStats(
+	table *tview.Table,
+	buttons []*tview.Button) func(*tcell.EventKey) *tcell.EventKey {
+	return func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTAB:
-			if uim.ui.GetFocus() == prevButton || uim.ui.GetFocus() == nextButton {
+			if uim.anyButtonFocused(buttons) {
 				uim.ui.SetFocus(table)
 			} else {
-				if prevButton != nil {
-					uim.ui.SetFocus(prevButton)
-				} else if nextButton != nil {
-					uim.ui.SetFocus(nextButton)
-				}
+				uim.ui.SetFocus(buttons[0])
 			}
 		case tcell.KeyLeft, tcell.KeyRight:
-			if uim.ui.GetFocus() == prevButton && nextButton != nil {
-				uim.ui.SetFocus(nextButton)
-			} else if uim.ui.GetFocus() == nextButton && prevButton != nil {
-				uim.ui.SetFocus(prevButton)
-			}
+			prevIndx := indexOf(uim.ui.GetFocus(), buttons)
+			newIndx := (prevIndx + 1) % len(buttons)
+			uim.ui.SetFocus(buttons[newIndx])
 		default:
 		}
 		return event
-	})
+	}
+}
 
-	uim.pages.AddPage(pageNameStatistics, grid, true, false)
+func (uim *UIManager) anyButtonFocused(buttons []*tview.Button) bool {
+	focusedPrimitive := uim.ui.GetFocus()
+	for _, button := range buttons {
+		if button == focusedPrimitive {
+			return true
+		}
+	}
+	return false
+}
+
+func indexOf(targetButton tview.Primitive, buttons []*tview.Button) int {
+	for i, button := range buttons {
+		if targetButton == button {
+			return i
+		}
+	}
+	return -1
+}
+
+func (uim *UIManager) createStatisticsButtons(start, end int, tasks []*Task) []*tview.Button {
+	buttons := make([]*tview.Button, 0)
+
+	const pageSize = 5
+	if start >= pageSize {
+		prevButton := tview.NewButton("Prev").SetSelectedFunc(func() {
+			uim.pageStatistics(start-pageSize, start, tasks)
+			uim.pages.SwitchToPage(pageNameStatistics)
+		})
+
+		buttons = append(buttons, prevButton)
+	}
+	if end < len(tasks) {
+		nextButton := tview.NewButton("Next").SetSelectedFunc(func() {
+			if end+5 < len(tasks) {
+				uim.pageStatistics(end, end+pageSize, tasks)
+			} else {
+				uim.pageStatistics(end, len(tasks), tasks)
+			}
+			uim.pages.SwitchToPage(pageNameStatistics)
+		})
+
+		buttons = append(buttons, nextButton)
+	}
+
+	return buttons
 }
 
 func (uim *UIManager) statisticsTable(start, end int, tasks []*Task) *tview.Table {
