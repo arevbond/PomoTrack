@@ -11,7 +11,7 @@ type Storage struct {
 	DB *sql.DB
 }
 
-func newStorage(filename string) (*Storage, error) {
+func NewStorage(filename string) (*Storage, error) {
 	db, err := sql.Open("sqlite3", filename)
 	if err != nil {
 		return nil, fmt.Errorf("can't connect to db: %w", err)
@@ -20,9 +20,11 @@ func newStorage(filename string) (*Storage, error) {
 }
 
 func (s *Storage) CreateTask(task *Task) error {
-	query := `INSERT INTO tasks (start_at) VALUES (?) RETURNING id;`
+	query := `INSERT INTO tasks (start_at, finish_at, duration) VALUES (?, ?, ?) RETURNING id;`
 
-	err := s.DB.QueryRow(query, task.StartAt).Scan(&task.ID)
+	args := []any{task.StartAt, task.FinishAt, task.Duration}
+
+	err := s.DB.QueryRow(query, args...).Scan(&task.ID)
 	if err != nil {
 		return fmt.Errorf("can't create task: %w", err)
 	}
@@ -37,6 +39,16 @@ func (s *Storage) UpdateTask(task *Task) error {
 	_, err := s.DB.Exec(query, args...)
 	if err != nil {
 		return fmt.Errorf("can't update task: %w", err)
+	}
+	return nil
+}
+
+func (s *Storage) RemoveTask(id int) error {
+	query := `DELETE FROM tasks WHERE id = ?`
+
+	_, err := s.DB.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("can't remove task: %w", err)
 	}
 	return nil
 }

@@ -16,7 +16,7 @@ type Application struct {
 }
 
 func NewApplication(logger *slog.Logger, cfg *config.Config) *Application {
-	storage, err := newStorage("database.db")
+	database, err := NewStorage("database.db")
 	if err != nil {
 		panic(err)
 	}
@@ -25,12 +25,12 @@ func NewApplication(logger *slog.Logger, cfg *config.Config) *Application {
 
 	app := &Application{
 		logger:    logger,
-		uiManager: NewUIManager(logger, cfg, stateTaskChan, NewTaskManager(logger, storage, stateTaskChan)),
+		uiManager: NewUIManager(logger, cfg, stateTaskChan, NewTaskManager(logger, database, stateTaskChan)),
 	}
 
 	app.uiManager.DefaultTimerPages()
 
-	go app.uiManager.HandleStatesAndKeyboard()
+	go app.uiManager.InitStateAndKeyboardHandling()
 	go app.uiManager.taskManager.HandleTaskStateChanges()
 
 	return app
