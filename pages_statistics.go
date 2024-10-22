@@ -186,7 +186,7 @@ func (uim *UIManager) handleVerticalNavigation(table *tview.Table, row, col int,
 	}
 }
 
-func (uim *UIManager) removeTgiask(tasks []*Task, indx int) {
+func (uim *UIManager) removeTask(tasks []*Task, indx int) {
 	err := uim.taskManager.RemoveTask(tasks[indx].ID)
 	if err != nil {
 		uim.logger.Error("Can't delete task", slog.Any("id", tasks[indx].ID))

@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"github.com/arevbond/PomoTrack/config"
 	"log"
 	"log/slog"
 	"time"
@@ -19,7 +20,7 @@ type Application struct {
 	logger    *slog.Logger
 }
 
-func NewApplication(logger *slog.Logger) *Application {
+func NewApplication(logger *slog.Logger, cfg *config.Config) *Application {
 	database, err := NewStorage("database.db")
 	if err != nil {
 		panic(err)
@@ -29,7 +30,7 @@ func NewApplication(logger *slog.Logger) *Application {
 
 	app := &Application{
 		logger:    logger,
-		uiManager: NewUIManager(logger, stateTaskChan, NewTaskManager(logger, database, stateTaskChan)),
+		uiManager: NewUIManager(logger, cfg, stateTaskChan, NewTaskManager(logger, database, stateTaskChan)),
 	}
 
 	app.uiManager.DefaultTimerPages()
