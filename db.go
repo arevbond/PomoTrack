@@ -20,9 +20,11 @@ func NewStorage(filename string) (*Storage, error) {
 }
 
 func (s *Storage) CreateTask(task *Task) error {
-	query := `INSERT INTO tasks (start_at) VALUES (?) RETURNING id;`
+	query := `INSERT INTO tasks (start_at, finish_at, duration) VALUES (?, ?, ?) RETURNING id;`
 
-	err := s.DB.QueryRow(query, task.StartAt).Scan(&task.ID)
+	args := []any{task.StartAt, task.FinishAt, task.Duration}
+
+	err := s.DB.QueryRow(query, args...).Scan(&task.ID)
 	if err != nil {
 		return fmt.Errorf("can't create task: %w", err)
 	}

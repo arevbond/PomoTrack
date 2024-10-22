@@ -60,11 +60,28 @@ func (tm *TaskManager) RemoveTask(id int) error {
 	return tm.storage.RemoveTask(id)
 }
 
+func (tm *TaskManager) CreateNewTask(startAt time.Time, finishAt time.Time, duration int) (*Task, error) {
+	task := &Task{
+		ID:          0,
+		StartAt:     startAt,
+		FinishAt:    finishAt,
+		Duration:    duration,
+		lastStartAt: time.Now(),
+		finished:    false,
+	}
+
+	err := tm.storage.CreateTask(task)
+	if err != nil {
+		return nil, fmt.Errorf("can't create task: %w", err)
+	}
+	return task, nil
+}
+
 func (tm *TaskManager) handleStartTask() {
 	// предыдущая задача не создана или завершена
 	// создаём новую пустую задачу
 	if tm.currentTask == nil || tm.currentTask.finished {
-		newTask, err := tm.createNewTask()
+		newTask, err := tm.CreateNewTask(time.Now(), time.Now(), 0)
 		if err != nil {
 			tm.logger.Error("handle start task", slog.Any("error", err))
 		}
@@ -89,23 +106,6 @@ func (tm *TaskManager) handleFinishTask() {
 	if err != nil {
 		tm.logger.Error("handle start task", slog.Any("error", err))
 	}
-}
-
-func (tm *TaskManager) createNewTask() (*Task, error) {
-	task := &Task{
-		ID:          0,
-		StartAt:     time.Now(),
-		FinishAt:    time.Now(),
-		Duration:    0,
-		lastStartAt: time.Now(),
-		finished:    false,
-	}
-
-	err := tm.storage.CreateTask(task)
-	if err != nil {
-		return nil, fmt.Errorf("can't create task: %w", err)
-	}
-	return task, nil
 }
 
 func (tm *TaskManager) updateCurrentTaskDuration() error {

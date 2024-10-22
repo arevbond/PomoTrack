@@ -13,11 +13,12 @@ import (
 
 const screenRefreshInterval = 1 * time.Second
 
-type taskMngr interface {
+type taskTracker interface {
 	HandleTaskStateChanges()
 	TodayTasks() ([]*Task, error)
 	Tasks(limit int) ([]*Task, error)
 	RemoveTask(id int) error
+	CreateNewTask(startAt time.Time, finishAt time.Time, duration int) (*Task, error)
 }
 
 type UIManager struct {
@@ -27,7 +28,7 @@ type UIManager struct {
 	stateManager    *StateManager
 	stateChangeChan chan StateChangeEvent
 
-	taskManager   taskMngr
+	taskManager   taskTracker
 	stateTaskChan chan StateChangeEvent
 }
 
@@ -36,7 +37,7 @@ type StateChangeEvent struct {
 	NewState  TimerState
 }
 
-func NewUIManager(logger *slog.Logger, cfg *config.Config, events chan StateChangeEvent, tm taskMngr) *UIManager {
+func NewUIManager(logger *slog.Logger, cfg *config.Config, events chan StateChangeEvent, tm taskTracker) *UIManager {
 	stateChangeChan := make(chan StateChangeEvent)
 	focusTimer := NewFocusTimer(cfg.Timer.FocusDuration)
 	breakTimer := NewBreakTimer(cfg.Timer.BreakDuration)
