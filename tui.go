@@ -18,7 +18,8 @@ const (
 	pageNameActiveBreak = "Active-Break"
 	pageNamePauseBreak  = "Stop-Break"
 
-	pageNameStatistics = "Statistics"
+	pageNameStatistics       = "Statistics"
+	pageNameInsertStatistics = "Insert-Statistics"
 )
 
 const screenRefreshInterval = 1 * time.Second
@@ -94,12 +95,26 @@ func (uim *UIManager) keyboardEvents(event *tcell.EventKey) *tcell.EventKey {
 				uim.logger.Error("can't get today tasks", slog.Any("error", err))
 				return event
 			}
-			if len(tasks) > 5 {
-				uim.pageStatistics(0, 5, tasks)
+			if len(tasks) > statisticsPageSize {
+				uim.pageStatistics(0, statisticsPageSize, tasks)
 			} else {
 				uim.pageStatistics(0, len(tasks), tasks)
 			}
 			uim.pages.SwitchToPage(pageNameStatistics)
+		}
+	case tcell.KeyCtrlI:
+		if name == pageNameStatistics {
+			tasks, err := uim.taskManager.TodayTasks()
+			if err != nil {
+				uim.logger.Error("can't get today tasks", slog.Any("error", err))
+				return event
+			}
+			if len(tasks) > statisticsPageSize {
+				uim.pageInsertStatistics(0, 5, tasks)
+			} else {
+				uim.pageInsertStatistics(0, len(tasks), tasks)
+			}
+			uim.pages.SwitchToPage(pageNameInsertStatistics)
 		}
 	default:
 		return event

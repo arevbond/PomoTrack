@@ -10,83 +10,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-func (uim *UIManager) pagePause(pageName string, title string, timerType TimerType) {
-	pauseText := tview.NewTextView().
-		SetDynamicColors(true).
-		SetTextAlign(tview.AlignCenter).
-		SetText(title)
-
-	durationText := tview.NewTextView().
-		SetDynamicColors(true).
-		SetTextAlign(tview.AlignCenter).
-		SetText(uim.stateManager.timeToFinish(timerType).String())
-
-	startButton := tview.NewButton("Start").SetSelectedFunc(func() {
-		uim.stateManager.SetState(StateActive, timerType)
-	})
-
-	grid := tview.NewGrid().
-		SetRows(0, 3, 3, 1, 0).
-		SetColumns(0, 30, 0).
-		SetBorders(true)
-
-	grid.AddItem(pauseText, 1, 1, 1, 1, 0, 0, false)
-	grid.AddItem(durationText, 2, 1, 1, 1, 0, 0, false)
-	grid.AddItem(startButton, 3, 1, 1, 1, 0, 0, true)
-
-	uim.pages.AddPage(pageName, grid, true, true)
-}
-
-func (uim *UIManager) pageActiveTimer(pageName string, color, title string, timerType TimerType) {
-	breakText := tview.NewTextView().
-		SetDynamicColors(true).
-		SetTextAlign(tview.AlignCenter).
-		SetText(fmt.Sprintf("[%s]%s", color, title))
-
-	timerText := tview.NewTextView().
-		SetDynamicColors(true).
-		SetTextAlign(tview.AlignCenter).
-		SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
-			tview.Print(screen, fmt.Sprintf("[%s]%s[-]", color,
-				uim.stateManager.timeToFinish(timerType).String()),
-				x, y+height/4, width, tview.AlignCenter, tcell.ColorLime)
-			return 0, 0, 0, 0
-		})
-
-	pauseButton := tview.NewButton("Pause").SetSelectedFunc(func() {
-		uim.stateManager.SetState(StatePaused, timerType)
-	})
-
-	toggleButton := tview.NewButton("→").SetSelectedFunc(func() {
-		uim.stateManager.SetState(StateFinished, timerType)
-	})
-
-	grid := tview.NewGrid().
-		SetRows(0, 3, 3, 1, 0).
-		SetColumns(0, 25, 5, 0).
-		SetBorders(true)
-
-	grid.AddItem(breakText, 1, 1, 1, 2, 0, 0, false)
-	grid.AddItem(timerText, 2, 1, 1, 2, 0, 0, false)
-	grid.AddItem(pauseButton, 3, 1, 1, 1, 0, 0, true)
-	grid.AddItem(toggleButton, 3, 2, 1, 1, 0, 0, false)
-
-	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		switch event.Key() {
-		case tcell.KeyTAB, tcell.KeyLeft, tcell.KeyRight:
-			if uim.ui.GetFocus() == pauseButton {
-				uim.ui.SetFocus(toggleButton)
-			} else {
-				uim.ui.SetFocus(pauseButton)
-			}
-		default:
-			return event
-		}
-		return nil
-	})
-
-	uim.pages.AddPage(pageName, grid, true, false)
-}
+const statisticsPageSize = 6
 
 func (uim *UIManager) pageStatistics(start, end int, tasks []*Task) {
 	table := uim.statisticsTable(start, end, tasks)
@@ -99,7 +23,8 @@ func (uim *UIManager) pageStatistics(start, end int, tasks []*Task) {
 		SetDynamicColors(true)
 
 	grid := tview.NewGrid().
-		SetRows(3, 0, 1, 1).
+		SetRows(1, 0, 1, 1).
+		//SetRows(1, 15, 1, 1).
 		SetColumns(0, 25, 25, 0).
 		SetBorders(true)
 
@@ -159,10 +84,9 @@ func indexOf(targetButton tview.Primitive, buttons []*tview.Button) int {
 func (uim *UIManager) createStatisticsButtons(start, end int, tasks []*Task) []*tview.Button {
 	buttons := make([]*tview.Button, 0)
 
-	const pageSize = 5
-	if start >= pageSize {
+	if start >= statisticsPageSize {
 		prevButton := tview.NewButton("Prev").SetSelectedFunc(func() {
-			uim.pageStatistics(start-pageSize, start, tasks)
+			uim.pageStatistics(start-statisticsPageSize, start, tasks)
 			uim.pages.SwitchToPage(pageNameStatistics)
 		})
 
@@ -171,7 +95,7 @@ func (uim *UIManager) createStatisticsButtons(start, end int, tasks []*Task) []*
 	if end < len(tasks) {
 		nextButton := tview.NewButton("Next").SetSelectedFunc(func() {
 			if end+5 < len(tasks) {
-				uim.pageStatistics(end, end+pageSize, tasks)
+				uim.pageStatistics(end, end+statisticsPageSize, tasks)
 			} else {
 				uim.pageStatistics(end, len(tasks), tasks)
 			}
@@ -262,7 +186,7 @@ func (uim *UIManager) handleVerticalNavigation(table *tview.Table, row, col int,
 	}
 }
 
-func (uim *UIManager) removeTask(tasks []*Task, indx int) {
+func (uim *UIManager) removeTgiask(tasks []*Task, indx int) {
 	err := uim.taskManager.RemoveTask(tasks[indx].ID)
 	if err != nil {
 		uim.logger.Error("Can't delete task", slog.Any("id", tasks[indx].ID))
@@ -284,4 +208,49 @@ func (uim *UIManager) totalDuration(tasks []*Task) string {
 	}
 	res := time.Duration(total) * time.Second
 	return res.String()
+}
+
+func (uim *UIManager) pageInsertStatistics(start, end int, tasks []*Task) {
+	table := uim.statisticsTable(start, end, tasks)
+
+	buttons := uim.createStatisticsButtons(start, end, tasks)
+
+	text := tview.NewTextView().
+		SetTextAlign(tview.AlignCenter).
+		SetText(fmt.Sprintf("Total: %s", uim.totalDuration(tasks))).
+		SetDynamicColors(true)
+
+	form1 := tview.NewForm().SetHorizontal(true).
+		AddInputField("Date", time.Now().Format("02-01-06"), 10, func(textToCheck string, lastChar rune) bool {
+			return true
+		}, nil).
+		AddInputField("Time start", time.Now().Format("15-04"), 10, func(textToCheck string, lastChar rune) bool {
+			return true
+		}, nil)
+
+	form2 := tview.NewForm().SetHorizontal(true).
+		AddInputField("Minutes", "", 10, func(textToCheck string, lastChar rune) bool {
+			return true
+		}, nil).
+		AddButton("Save", nil).AddButton("Cancel", nil)
+
+	grid := tview.NewGrid().
+		SetRows(1, 3, 3, 0, 1, 1).
+		SetColumns(0, 25, 25, 0).
+		SetBorders(true)
+
+	grid.AddItem(text, 0, 1, 1, 2, 0, 0, false)
+
+	grid.AddItem(form1, 1, 1, 1, 2, 0, 0, true)
+	grid.AddItem(form2, 2, 1, 1, 2, 0, 0, true)
+
+	grid.AddItem(table, 3, 1, 1, 2, 0, 0, false)
+
+	for i, button := range buttons {
+		grid.AddItem(button, 4, i+1, 1, 1, 0, 0, false)
+	}
+
+	//grid.SetInputCapture(uim.inputCapturePageStats(table, buttons))
+
+	uim.pages.AddPage(pageNameInsertStatistics, grid, true, false)
 }
