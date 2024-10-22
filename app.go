@@ -2,8 +2,9 @@ package main
 
 import (
 	"embed"
-	"github.com/arevbond/PomoTrack/config"
 	"log/slog"
+
+	"github.com/arevbond/PomoTrack/config"
 )
 
 //go:embed assets
