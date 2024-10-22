@@ -22,14 +22,14 @@ type taskTracker interface {
 }
 
 type UIManager struct {
-	ui              *tview.Application
-	pages           *tview.Pages
-	logger          *slog.Logger
-	stateManager    *StateManager
-	stateChangeChan chan StateChangeEvent
+	ui           *tview.Application
+	pages        *tview.Pages
+	logger       *slog.Logger
+	stateManager *StateManager
+	stateUpdates chan StateChangeEvent
 
-	taskManager   taskTracker
-	stateTaskChan chan StateChangeEvent
+	taskManager      taskTracker
+	stateTaskUpdates chan StateChangeEvent
 }
 
 type StateChangeEvent struct {
@@ -43,21 +43,21 @@ func NewUIManager(logger *slog.Logger, cfg *config.Config, events chan StateChan
 	breakTimer := NewBreakTimer(cfg.Timer.BreakDuration)
 
 	return &UIManager{
-		ui:              tview.NewApplication(),
-		pages:           tview.NewPages(),
-		logger:          logger,
-		stateManager:    NewStateManager(logger, focusTimer, breakTimer, stateChangeChan, cfg.Timer),
-		stateChangeChan: stateChangeChan,
-		taskManager:     tm,
-		stateTaskChan:   events,
+		ui:               tview.NewApplication(),
+		pages:            tview.NewPages(),
+		logger:           logger,
+		stateManager:     NewStateManager(logger, focusTimer, breakTimer, stateChangeChan, cfg.Timer),
+		stateUpdates:     stateChangeChan,
+		taskManager:      tm,
+		stateTaskUpdates: events,
 	}
 }
 
 func (uim *UIManager) DefaultTimerPages() {
-	uim.pageActiveTimer(pageNameActiveFocus, "purple", "Pomodoro", FocusTimer)
-	uim.pageActiveTimer(pageNameActiveBreak, "green", "Break", BreakTimer)
-	uim.pagePause(pageNamePauseBreak, "Break", BreakTimer)
-	uim.pagePause(pageNamePauseFocus, "Pomodoro", FocusTimer)
+	uim.renderActivePage(activeFocusPage, "purple", "Pomodoro", FocusTimer)
+	uim.renderActivePage(activeBreakPage, "green", "Break", BreakTimer)
+	uim.renderPausePage(pauseBreakPage, "Break", BreakTimer)
+	uim.renderPausePage(pauseFocusPage, "Pomodoro", FocusTimer)
 }
 
 func (uim *UIManager) setKeyboardEvents() {
@@ -67,26 +67,26 @@ func (uim *UIManager) setKeyboardEvents() {
 func (uim *UIManager) keyboardEvents(event *tcell.EventKey) *tcell.EventKey {
 	switch event.Key() {
 	case tcell.KeyF1:
-		availablePages := []string{pageNameStatistics, pageNamePauseBreak}
+		availablePages := []string{statsPage, pauseBreakPage}
 		if !uim.currentPageIs(availablePages) {
 			return event
 		}
-		uim.pages.SwitchToPage(pageNamePauseFocus)
+		uim.pages.SwitchToPage(pauseFocusPage)
 	case tcell.KeyF2:
-		availablePages := []string{pageNameStatistics, pageNamePauseFocus}
+		availablePages := []string{statsPage, pauseFocusPage}
 		if !uim.currentPageIs(availablePages) {
 			return event
 		}
-		uim.pages.SwitchToPage(pageNamePauseBreak)
+		uim.pages.SwitchToPage(pauseBreakPage)
 	case tcell.KeyF3:
-		availablePages := []string{pageNamePauseFocus, pageNamePauseBreak, pageNameInsertStatistics}
+		availablePages := []string{pauseFocusPage, pauseBreakPage, insertStatsPage}
 		if uim.currentPageIs(availablePages) {
-			uim.switchToStatisticsPage(pageNameStatistics)
+			uim.switchToStatisticsPage(statsPage)
 		}
 	case tcell.KeyCtrlI:
-		availablePages := []string{pageNameStatistics}
+		availablePages := []string{statsPage}
 		if uim.currentPageIs(availablePages) {
-			uim.switchToStatisticsPage(pageNameInsertStatistics)
+			uim.switchToStatisticsPage(insertStatsPage)
 		}
 	default:
 		return event
@@ -102,10 +102,10 @@ func (uim *UIManager) switchToStatisticsPage(pageName string) {
 	}
 	if len(tasks) > statisticsPageSize {
 		uim.pageInsertStatistics(0, statisticsPageSize, tasks)
-		uim.pageStatistics(0, statisticsPageSize, tasks)
+		uim.renderStatsPage(0, statisticsPageSize, tasks)
 	} else {
 		uim.pageInsertStatistics(0, len(tasks), tasks)
-		uim.pageStatistics(0, len(tasks), tasks)
+		uim.renderStatsPage(0, len(tasks), tasks)
 	}
 	uim.pages.SwitchToPage(pageName)
 }
@@ -120,15 +120,15 @@ func (uim *UIManager) currentPageIs(pages []string) bool {
 	return false
 }
 
-func (uim *UIManager) HandleStatesAndKeyboard() {
+func (uim *UIManager) InitStateAndKeyboardHandling() {
 	stopRefreshing := make(chan struct{})
 	uim.setKeyboardEvents()
-	go uim.handleTimerStateChanges(stopRefreshing)
+	go uim.listenToStateChanges(stopRefreshing)
 }
 
-func (uim *UIManager) handleTimerStateChanges(stopRefreshing chan struct{}) {
-	for event := range uim.stateChangeChan {
-		uim.stateTaskChan <- event
+func (uim *UIManager) listenToStateChanges(stopRefreshing chan struct{}) {
+	for event := range uim.stateUpdates {
+		uim.stateTaskUpdates <- event
 
 		switch event.NewState {
 		case StateActive:
@@ -146,17 +146,17 @@ func (uim *UIManager) handleTimerStateChanges(stopRefreshing chan struct{}) {
 	}
 }
 
-func (uim *UIManager) handleStateActive(timerType TimerType, quit chan struct{}) {
+func (uim *UIManager) handleStateActive(timerType TimerType, stopSignal chan struct{}) {
 	go playClickSound()
 
 	switch timerType {
 	case FocusTimer:
-		uim.showPage(pageNameActiveFocus)
+		uim.displayPage(activeFocusPage)
 	case BreakTimer:
-		uim.showPage(pageNameActiveBreak)
+		uim.displayPage(activeBreakPage)
 	}
 
-	go uim.updateUIWithTicker(quit)
+	go uim.updateUIWithTicker(stopSignal)
 }
 
 func (uim *UIManager) updateUIWithTicker(quit chan struct{}) {
@@ -178,9 +178,9 @@ func (uim *UIManager) handleStatePaused(timerType TimerType) {
 
 	switch timerType {
 	case FocusTimer:
-		uim.updateAndShowPausePage(FocusTimer)
+		uim.renderPausePageForTimer(FocusTimer)
 	case BreakTimer:
-		uim.updateAndShowPausePage(BreakTimer)
+		uim.renderPausePageForTimer(BreakTimer)
 	}
 }
 
@@ -189,24 +189,24 @@ func (uim *UIManager) handleStateFinished(timerType TimerType) {
 
 	switch timerType {
 	case FocusTimer:
-		uim.updateAndShowPausePage(BreakTimer)
+		uim.renderPausePageForTimer(BreakTimer)
 	case BreakTimer:
-		uim.updateAndShowPausePage(FocusTimer)
+		uim.renderPausePageForTimer(FocusTimer)
 	}
 }
 
-func (uim *UIManager) updateAndShowPausePage(timerType TimerType) {
+func (uim *UIManager) renderPausePageForTimer(timerType TimerType) {
 	switch timerType {
 	case BreakTimer:
-		uim.pagePause(pageNamePauseBreak, "Break", BreakTimer)
-		uim.showPage(pageNamePauseBreak)
+		uim.renderPausePage(pauseBreakPage, "Break", BreakTimer)
+		uim.displayPage(pauseBreakPage)
 	case FocusTimer:
-		uim.pagePause(pageNamePauseFocus, "Pomodoro", FocusTimer)
-		uim.showPage(pageNamePauseFocus)
+		uim.renderPausePage(pauseFocusPage, "Pomodoro", FocusTimer)
+		uim.displayPage(pauseFocusPage)
 	}
 }
 
-func (uim *UIManager) showPage(pageName string) {
+func (uim *UIManager) displayPage(pageName string) {
 	uim.ui.QueueUpdateDraw(func() {
 		uim.pages.SwitchToPage(pageName)
 	})

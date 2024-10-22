@@ -30,7 +30,7 @@ func NewApplication(logger *slog.Logger, cfg *config.Config) *Application {
 
 	app.uiManager.DefaultTimerPages()
 
-	go app.uiManager.HandleStatesAndKeyboard()
+	go app.uiManager.InitStateAndKeyboardHandling()
 	go app.uiManager.taskManager.HandleTaskStateChanges()
 
 	return app

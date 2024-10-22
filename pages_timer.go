@@ -8,14 +8,14 @@ import (
 )
 
 const (
-	pageNameActiveFocus = "Active-Focus"
-	pageNamePauseFocus  = "Stop-Focus"
+	activeFocusPage = "Active-Focus"
+	pauseFocusPage  = "Stop-Focus"
 
-	pageNameActiveBreak = "Active-Break"
-	pageNamePauseBreak  = "Stop-Break"
+	activeBreakPage = "Active-Break"
+	pauseBreakPage  = "Stop-Break"
 )
 
-func (uim *UIManager) pagePause(pageName string, title string, timerType TimerType) {
+func (uim *UIManager) renderPausePage(pageName string, title string, timerType TimerType) {
 	pauseText := tview.NewTextView().
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter).
@@ -42,7 +42,7 @@ func (uim *UIManager) pagePause(pageName string, title string, timerType TimerTy
 	uim.pages.AddPage(pageName, grid, true, true)
 }
 
-func (uim *UIManager) pageActiveTimer(pageName string, color, title string, timerType TimerType) {
+func (uim *UIManager) renderActivePage(pageName string, color, title string, timerType TimerType) {
 	breakText := tview.NewTextView().
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter).
