@@ -15,7 +15,7 @@ const (
 	pauseBreakPage  = "Stop-Break"
 )
 
-func (uim *UIManager) renderPausePage(pageName string, title string, timerType TimerType) {
+func (m *UIManager) renderPausePage(pageName string, title string, timerType TimerType) {
 	pauseText := tview.NewTextView().
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter).
@@ -24,10 +24,10 @@ func (uim *UIManager) renderPausePage(pageName string, title string, timerType T
 	durationText := tview.NewTextView().
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter).
-		SetText(uim.stateManager.timeToFinish(timerType).String())
+		SetText(m.stateManager.timeToFinish(timerType).String())
 
 	startButton := tview.NewButton("Start").SetSelectedFunc(func() {
-		uim.stateManager.SetState(StateActive, timerType)
+		m.stateManager.SetState(StateActive, timerType)
 	})
 
 	grid := tview.NewGrid().
@@ -39,10 +39,10 @@ func (uim *UIManager) renderPausePage(pageName string, title string, timerType T
 	grid.AddItem(durationText, 2, 1, 1, 1, 0, 0, false)
 	grid.AddItem(startButton, 3, 1, 1, 1, 0, 0, true)
 
-	uim.pages.AddPage(pageName, grid, true, true)
+	m.pages.AddPage(pageName, grid, true, true)
 }
 
-func (uim *UIManager) renderActivePage(pageName string, color, title string, timerType TimerType) {
+func (m *UIManager) renderActivePage(pageName string, color, title string, timerType TimerType) {
 	breakText := tview.NewTextView().
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter).
@@ -53,17 +53,17 @@ func (uim *UIManager) renderActivePage(pageName string, color, title string, tim
 		SetTextAlign(tview.AlignCenter).
 		SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
 			tview.Print(screen, fmt.Sprintf("[%s]%s[-]", color,
-				uim.stateManager.timeToFinish(timerType).String()),
+				m.stateManager.timeToFinish(timerType).String()),
 				x, y+height/4, width, tview.AlignCenter, tcell.ColorLime)
 			return 0, 0, 0, 0
 		})
 
 	pauseButton := tview.NewButton("Pause").SetSelectedFunc(func() {
-		uim.stateManager.SetState(StatePaused, timerType)
+		m.stateManager.SetState(StatePaused, timerType)
 	})
 
 	toggleButton := tview.NewButton("→").SetSelectedFunc(func() {
-		uim.stateManager.SetState(StateFinished, timerType)
+		m.stateManager.SetState(StateFinished, timerType)
 	})
 
 	grid := tview.NewGrid().
@@ -79,10 +79,10 @@ func (uim *UIManager) renderActivePage(pageName string, color, title string, tim
 	grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTAB, tcell.KeyLeft, tcell.KeyRight:
-			if uim.ui.GetFocus() == pauseButton {
-				uim.ui.SetFocus(toggleButton)
+			if m.ui.GetFocus() == pauseButton {
+				m.ui.SetFocus(toggleButton)
 			} else {
-				uim.ui.SetFocus(pauseButton)
+				m.ui.SetFocus(pauseButton)
 			}
 		default:
 			return event
@@ -90,5 +90,5 @@ func (uim *UIManager) renderActivePage(pageName string, color, title string, tim
 		return nil
 	})
 
-	uim.pages.AddPage(pageName, grid, true, false)
+	m.pages.AddPage(pageName, grid, true, false)
 }

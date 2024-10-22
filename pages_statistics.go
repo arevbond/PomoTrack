@@ -18,14 +18,14 @@ const (
 
 const statisticsPageSize = 6
 
-func (uim *UIManager) renderStatsPage(start, end int, tasks []*Task) {
-	table := uim.newStatsTable(start, end, tasks)
+func (m *UIManager) renderStatsPage(start, end int, tasks []*Task) {
+	table := m.newStatsTable(start, end, tasks)
 
-	buttons := uim.newStatsButtons(start, end, tasks)
+	buttons := m.newStatsButtons(start, end, tasks)
 
 	text := tview.NewTextView().
 		SetTextAlign(tview.AlignCenter).
-		SetText(fmt.Sprintf("Total: %s", uim.totalDuration(tasks))).
+		SetText(fmt.Sprintf("Total: %s", m.totalDuration(tasks))).
 		SetDynamicColors(true)
 
 	grid := tview.NewGrid().
@@ -41,27 +41,27 @@ func (uim *UIManager) renderStatsPage(start, end int, tasks []*Task) {
 		grid.AddItem(button, 2, i+1, 1, 1, 0, 0, true)
 	}
 
-	grid.SetInputCapture(uim.captureStatsInput(table, buttons))
+	grid.SetInputCapture(m.captureStatsInput(table, buttons))
 
-	uim.pages.AddPage(statsPage, grid, true, false)
+	m.pages.AddPage(statsPage, grid, true, false)
 }
 
-func (uim *UIManager) captureStatsInput(
+func (m *UIManager) captureStatsInput(
 	table *tview.Table,
 	buttons []*tview.Button) func(*tcell.EventKey) *tcell.EventKey {
 	return func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTAB:
-			if uim.isButtonFocused(buttons) {
-				uim.ui.SetFocus(table)
+			if m.isButtonFocused(buttons) {
+				m.ui.SetFocus(table)
 			} else {
-				uim.ui.SetFocus(buttons[0])
+				m.ui.SetFocus(buttons[0])
 			}
 		case tcell.KeyLeft, tcell.KeyRight:
 			if len(buttons) > 0 {
-				prevIndx := buttonIndex(uim.ui.GetFocus(), buttons)
+				prevIndx := buttonIndex(m.ui.GetFocus(), buttons)
 				newIndx := (prevIndx + 1) % len(buttons)
-				uim.ui.SetFocus(buttons[newIndx])
+				m.ui.SetFocus(buttons[newIndx])
 			}
 		default:
 		}
@@ -69,8 +69,8 @@ func (uim *UIManager) captureStatsInput(
 	}
 }
 
-func (uim *UIManager) isButtonFocused(buttons []*tview.Button) bool {
-	focusedPrimitive := uim.ui.GetFocus()
+func (m *UIManager) isButtonFocused(buttons []*tview.Button) bool {
+	focusedPrimitive := m.ui.GetFocus()
 	for _, button := range buttons {
 		if button == focusedPrimitive {
 			return true
@@ -88,13 +88,13 @@ func buttonIndex(targetButton tview.Primitive, buttons []*tview.Button) int {
 	return -1
 }
 
-func (uim *UIManager) newStatsButtons(start, end int, tasks []*Task) []*tview.Button {
+func (m *UIManager) newStatsButtons(start, end int, tasks []*Task) []*tview.Button {
 	buttons := make([]*tview.Button, 0)
 
 	if start >= statisticsPageSize {
 		prevButton := tview.NewButton("Prev").SetSelectedFunc(func() {
-			uim.renderStatsPage(start-statisticsPageSize, start, tasks)
-			uim.pages.SwitchToPage(statsPage)
+			m.renderStatsPage(start-statisticsPageSize, start, tasks)
+			m.pages.SwitchToPage(statsPage)
 		})
 
 		buttons = append(buttons, prevButton)
@@ -102,11 +102,11 @@ func (uim *UIManager) newStatsButtons(start, end int, tasks []*Task) []*tview.Bu
 	if end < len(tasks) {
 		nextButton := tview.NewButton("Next").SetSelectedFunc(func() {
 			if end+5 < len(tasks) {
-				uim.renderStatsPage(end, end+statisticsPageSize, tasks)
+				m.renderStatsPage(end, end+statisticsPageSize, tasks)
 			} else {
-				uim.renderStatsPage(end, len(tasks), tasks)
+				m.renderStatsPage(end, len(tasks), tasks)
 			}
-			uim.pages.SwitchToPage(statsPage)
+			m.pages.SwitchToPage(statsPage)
 		})
 
 		buttons = append(buttons, nextButton)
@@ -115,7 +115,7 @@ func (uim *UIManager) newStatsButtons(start, end int, tasks []*Task) []*tview.Bu
 	return buttons
 }
 
-func (uim *UIManager) newStatsTable(start, end int, tasks []*Task) *tview.Table {
+func (m *UIManager) newStatsTable(start, end int, tasks []*Task) *tview.Table {
 	table := tview.NewTable().SetBorders(true)
 	headers := []string{"Date", "Time", "Seconds", "Action"}
 
@@ -136,11 +136,11 @@ func (uim *UIManager) newStatsTable(start, end int, tasks []*Task) *tview.Table 
 		table.SetCell(row, 3, tview.NewTableCell("[red] Delete [-]").SetAlign(tview.AlignCenter).SetSelectable(true))
 	}
 
-	table.SetInputCapture(uim.captureTableInput(table, tasks))
+	table.SetInputCapture(m.captureTableInput(table, tasks))
 	return table
 }
 
-func (uim *UIManager) captureTableInput(table *tview.Table, tasks []*Task) func(*tcell.EventKey) *tcell.EventKey {
+func (m *UIManager) captureTableInput(table *tview.Table, tasks []*Task) func(*tcell.EventKey) *tcell.EventKey {
 	handleEnterKey := func(table *tview.Table, tasks []*Task, col int) {
 		if len(tasks) > 0 && col != 3 {
 			table.Select(1, 3).SetSelectable(true, true)
@@ -155,14 +155,14 @@ func (uim *UIManager) captureTableInput(table *tview.Table, tasks []*Task) func(
 		case tcell.KeyEnter:
 			handleEnterKey(table, tasks, col)
 		case tcell.KeyDown, tcell.KeyUp:
-			uim.handleVerticalNavigation(table, row, col, event.Key())
+			m.handleVerticalNavigation(table, row, col, event.Key())
 		case tcell.KeyLeft, tcell.KeyRight:
 			if col != 3 {
 				table.Select(row, 3)
 			}
 		case tcell.KeyCtrlY:
 			if col == 3 && row > 0 {
-				uim.removeTask(tasks, row-1)
+				m.removeTask(tasks, row-1)
 			}
 		case tcell.KeyEscape:
 			table.Select(0, 0).SetSelectable(false, false)
@@ -174,7 +174,7 @@ func (uim *UIManager) captureTableInput(table *tview.Table, tasks []*Task) func(
 	}
 }
 
-func (uim *UIManager) handleVerticalNavigation(table *tview.Table, row, col int, key tcell.Key) {
+func (m *UIManager) handleVerticalNavigation(table *tview.Table, row, col int, key tcell.Key) {
 	switch key {
 	case tcell.KeyDown:
 		if row < table.GetRowCount()-1 {
@@ -192,22 +192,22 @@ func (uim *UIManager) handleVerticalNavigation(table *tview.Table, row, col int,
 	}
 }
 
-func (uim *UIManager) removeTask(tasks []*Task, taskIndex int) {
-	err := uim.taskManager.RemoveTask(tasks[taskIndex].ID)
+func (m *UIManager) removeTask(tasks []*Task, taskIndex int) {
+	err := m.taskManager.RemoveTask(tasks[taskIndex].ID)
 	if err != nil {
-		uim.logger.Error("Can't delete task", slog.Any("id", tasks[taskIndex].ID))
+		m.logger.Error("Can't delete task", slog.Any("id", tasks[taskIndex].ID))
 	}
 
 	tasks = append(tasks[:taskIndex], tasks[taskIndex+1:]...)
 	if len(tasks) > 5 {
-		uim.renderStatsPage(0, statisticsPageSize, tasks)
+		m.renderStatsPage(0, statisticsPageSize, tasks)
 	} else {
-		uim.renderStatsPage(0, len(tasks), tasks)
+		m.renderStatsPage(0, len(tasks), tasks)
 	}
-	uim.pages.SwitchToPage(statsPage)
+	m.pages.SwitchToPage(statsPage)
 }
 
-func (uim *UIManager) totalDuration(tasks []*Task) string {
+func (m *UIManager) totalDuration(tasks []*Task) string {
 	var total int
 	for _, t := range tasks {
 		total += t.Duration
@@ -216,14 +216,14 @@ func (uim *UIManager) totalDuration(tasks []*Task) string {
 	return res.String()
 }
 
-func (uim *UIManager) pageInsertStatistics(start, end int, tasks []*Task) {
-	table := uim.newStatsTable(start, end, tasks)
+func (m *UIManager) pageInsertStatistics(start, end int, tasks []*Task) {
+	table := m.newStatsTable(start, end, tasks)
 
-	buttons := uim.newStatsButtons(start, end, tasks)
+	buttons := m.newStatsButtons(start, end, tasks)
 
 	text := tview.NewTextView().
 		SetTextAlign(tview.AlignCenter).
-		SetText(fmt.Sprintf("Total: %s", uim.totalDuration(tasks))).
+		SetText(fmt.Sprintf("Total: %s", m.totalDuration(tasks))).
 		SetDynamicColors(true)
 
 	form := tview.NewForm().
@@ -231,7 +231,7 @@ func (uim *UIManager) pageInsertStatistics(start, end int, tasks []*Task) {
 		AddInputField("Time start", time.Now().Format("15:04"), 7, checkTimeInInput(), nil).
 		AddInputField("Seconds", "0", 5, tview.InputFieldInteger, nil)
 
-	form.AddButton("Save", uim.saveTask(form))
+	form.AddButton("Save", m.saveTask(form))
 
 	grid := tview.NewGrid().
 		SetRows(1, 3, 0, 1, 1).
@@ -248,7 +248,7 @@ func (uim *UIManager) pageInsertStatistics(start, end int, tasks []*Task) {
 		grid.AddItem(button, 3, i+1, 1, 1, 0, 0, false)
 	}
 
-	uim.pages.AddPage(insertStatsPage, grid, true, false)
+	m.pages.AddPage(insertStatsPage, grid, true, false)
 }
 
 func checkTimeInInput() func(textToCheck string, lastChar rune) bool {
@@ -271,35 +271,35 @@ func checkTimeInInput() func(textToCheck string, lastChar rune) bool {
 	}
 }
 
-func (uim *UIManager) saveTask(form *tview.Form) func() {
+func (m *UIManager) saveTask(form *tview.Form) func() {
 	return func() {
 		timeStartStr := form.GetFormItem(0).(*tview.InputField).GetText()
 		secondsStr := form.GetFormItem(1).(*tview.InputField).GetText()
 
 		timeStart, err := time.Parse("15:04", timeStartStr)
 		if err != nil {
-			uim.logger.Error("can't convert str to time", slog.String("input time", timeStartStr))
+			m.logger.Error("can't convert str to time", slog.String("input time", timeStartStr))
 			return
 		}
 		seconds, err := strconv.Atoi(secondsStr)
 		if err != nil {
-			uim.logger.Error("can't convert seconds string to int", slog.String("input seconds", secondsStr))
+			m.logger.Error("can't convert seconds string to int", slog.String("input seconds", secondsStr))
 			return
 		}
 		dateStart := timeStart.AddDate(time.Now().Year(), int(time.Now().Month())-1, time.Now().Day()-1)
 
-		err = uim.saveTaskFromForm(dateStart, seconds)
+		err = m.saveTaskFromForm(dateStart, seconds)
 		if err != nil {
-			uim.logger.Error("can't create task", slog.Any("error", err))
-			uim.switchToStatisticsPage(insertStatsPage)
+			m.logger.Error("can't create task", slog.Any("error", err))
+			m.switchToStatisticsPage(insertStatsPage)
 			return
 		}
-		uim.switchToStatisticsPage(statsPage)
+		m.switchToStatisticsPage(statsPage)
 	}
 }
 
-func (uim *UIManager) saveTaskFromForm(timeStart time.Time, duration int) error {
+func (m *UIManager) saveTaskFromForm(timeStart time.Time, duration int) error {
 	finishTime := timeStart.Add(time.Duration(duration) * time.Second)
-	_, err := uim.taskManager.CreateNewTask(timeStart, finishTime, duration)
+	_, err := m.taskManager.CreateNewTask(timeStart, finishTime, duration)
 	return err
 }
