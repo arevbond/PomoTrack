@@ -11,17 +11,6 @@ import (
 	"github.com/rivo/tview"
 )
 
-const (
-	pageNameActiveFocus = "Active-Focus"
-	pageNamePauseFocus  = "Stop-Focus"
-
-	pageNameActiveBreak = "Active-Break"
-	pageNamePauseBreak  = "Stop-Break"
-
-	pageNameStatistics       = "Statistics"
-	pageNameInsertStatistics = "Insert-Statistics"
-)
-
 const screenRefreshInterval = 1 * time.Second
 
 type taskMngr interface {
@@ -75,51 +64,59 @@ func (uim *UIManager) setKeyboardEvents() {
 }
 
 func (uim *UIManager) keyboardEvents(event *tcell.EventKey) *tcell.EventKey {
-	name, _ := uim.pages.GetFrontPage()
-
 	switch event.Key() {
 	case tcell.KeyF1:
-		if name != pageNameStatistics && name != pageNamePauseBreak {
+		availablePages := []string{pageNameStatistics, pageNamePauseBreak}
+		if !uim.currentPageIs(availablePages) {
 			return event
 		}
 		uim.pages.SwitchToPage(pageNamePauseFocus)
 	case tcell.KeyF2:
-		if name != pageNameStatistics && name != pageNamePauseFocus {
+		availablePages := []string{pageNameStatistics, pageNamePauseFocus}
+		if !uim.currentPageIs(availablePages) {
 			return event
 		}
 		uim.pages.SwitchToPage(pageNamePauseBreak)
 	case tcell.KeyF3:
-		if name == pageNamePauseFocus || name == pageNamePauseBreak {
-			tasks, err := uim.taskManager.TodayTasks()
-			if err != nil {
-				uim.logger.Error("can't get today tasks", slog.Any("error", err))
-				return event
-			}
-			if len(tasks) > statisticsPageSize {
-				uim.pageStatistics(0, statisticsPageSize, tasks)
-			} else {
-				uim.pageStatistics(0, len(tasks), tasks)
-			}
-			uim.pages.SwitchToPage(pageNameStatistics)
+		availablePages := []string{pageNamePauseFocus, pageNamePauseBreak, pageNameInsertStatistics}
+		if uim.currentPageIs(availablePages) {
+			uim.switchToStatisticsPage(pageNameStatistics)
 		}
 	case tcell.KeyCtrlI:
-		if name == pageNameStatistics {
-			tasks, err := uim.taskManager.TodayTasks()
-			if err != nil {
-				uim.logger.Error("can't get today tasks", slog.Any("error", err))
-				return event
-			}
-			if len(tasks) > statisticsPageSize {
-				uim.pageInsertStatistics(0, 5, tasks)
-			} else {
-				uim.pageInsertStatistics(0, len(tasks), tasks)
-			}
-			uim.pages.SwitchToPage(pageNameInsertStatistics)
+		availablePages := []string{pageNameStatistics}
+		if uim.currentPageIs(availablePages) {
+			uim.switchToStatisticsPage(pageNameInsertStatistics)
 		}
 	default:
 		return event
 	}
 	return nil
+}
+
+func (uim *UIManager) switchToStatisticsPage(pageName string) {
+	tasks, err := uim.taskManager.TodayTasks()
+	if err != nil {
+		uim.logger.Error("can't get today tasks", slog.Any("error", err))
+		return
+	}
+	if len(tasks) > statisticsPageSize {
+		uim.pageInsertStatistics(0, statisticsPageSize, tasks)
+		uim.pageStatistics(0, statisticsPageSize, tasks)
+	} else {
+		uim.pageInsertStatistics(0, len(tasks), tasks)
+		uim.pageStatistics(0, len(tasks), tasks)
+	}
+	uim.pages.SwitchToPage(pageName)
+}
+
+func (uim *UIManager) currentPageIs(pages []string) bool {
+	name, _ := uim.pages.GetFrontPage()
+	for _, pageName := range pages {
+		if name == pageName {
+			return true
+		}
+	}
+	return false
 }
 
 func (uim *UIManager) HandleStatesAndKeyboard() {

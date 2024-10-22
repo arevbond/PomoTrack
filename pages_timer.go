@@ -2,8 +2,17 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+)
+
+const (
+	pageNameActiveFocus = "Active-Focus"
+	pageNamePauseFocus  = "Stop-Focus"
+
+	pageNameActiveBreak = "Active-Break"
+	pageNamePauseBreak  = "Stop-Break"
 )
 
 func (uim *UIManager) pagePause(pageName string, title string, timerType TimerType) {

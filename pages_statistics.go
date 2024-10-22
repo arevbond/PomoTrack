@@ -10,6 +10,11 @@ import (
 	"github.com/rivo/tview"
 )
 
+const (
+	pageNameStatistics       = "Statistics"
+	pageNameInsertStatistics = "Insert-Statistics"
+)
+
 const statisticsPageSize = 6
 
 func (uim *UIManager) pageStatistics(start, end int, tasks []*Task) {
@@ -186,13 +191,13 @@ func (uim *UIManager) handleVerticalNavigation(table *tview.Table, row, col int,
 	}
 }
 
-func (uim *UIManager) removeTask(tasks []*Task, indx int) {
-	err := uim.taskManager.RemoveTask(tasks[indx].ID)
+func (uim *UIManager) removeTask(tasks []*Task, index int) {
+	err := uim.taskManager.RemoveTask(tasks[index].ID)
 	if err != nil {
-		uim.logger.Error("Can't delete task", slog.Any("id", tasks[indx].ID))
+		uim.logger.Error("Can't delete task", slog.Any("id", tasks[index].ID))
 	}
 
-	tasks = append(tasks[:indx], tasks[indx+1:]...)
+	tasks = append(tasks[:index], tasks[index+1:]...)
 	if len(tasks) > 5 {
 		uim.pageStatistics(0, 5, tasks)
 	} else {
