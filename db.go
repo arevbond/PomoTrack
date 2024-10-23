@@ -22,7 +22,7 @@ func NewStorage(filename string) (*Storage, error) {
 func (s *Storage) CreateTask(task *Task) error {
 	query := `INSERT INTO tasks (start_at, finish_at, duration) VALUES (?, ?, ?) RETURNING id;`
 
-	args := []any{task.StartAt, task.FinishAt, task.Duration}
+	args := []any{task.StartAt, task.FinishAt, task.SecondsDuration}
 
 	err := s.DB.QueryRow(query, args...).Scan(&task.ID)
 	if err != nil {
@@ -34,7 +34,7 @@ func (s *Storage) CreateTask(task *Task) error {
 func (s *Storage) UpdateTask(task *Task) error {
 	query := `UPDATE tasks SET finish_at = ?, duration = ? WHERE id = ?;`
 
-	args := []any{task.FinishAt, task.Duration, task.ID}
+	args := []any{task.FinishAt, task.SecondsDuration, task.ID}
 
 	_, err := s.DB.Exec(query, args...)
 	if err != nil {
@@ -82,7 +82,7 @@ func (s *Storage) fetchTasks(query string, args ...any) ([]*Task, error) {
 	for rows.Next() {
 		var task Task
 
-		err = rows.Scan(&task.ID, &task.StartAt, &task.FinishAt, &task.Duration)
+		err = rows.Scan(&task.ID, &task.StartAt, &task.FinishAt, &task.SecondsDuration)
 		if err != nil {
 			return nil, fmt.Errorf("can't scan task: %w", err)
 		}
