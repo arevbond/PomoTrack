@@ -7,10 +7,10 @@ import (
 )
 
 type Task struct {
-	ID       int       `db:"id"`
-	StartAt  time.Time `db:"start_at"`
-	FinishAt time.Time `db:"finish_at"`
-	Duration int       `db:"duration"`
+	ID              int       `db:"id"`
+	StartAt         time.Time `db:"start_at"`
+	FinishAt        time.Time `db:"finish_at"`
+	SecondsDuration int       `db:"duration"`
 
 	// don't save to db; need for app logic
 	lastStartAt time.Time
@@ -62,12 +62,12 @@ func (tm *TaskManager) RemoveTask(id int) error {
 
 func (tm *TaskManager) CreateNewTask(startAt time.Time, finishAt time.Time, duration int) (*Task, error) {
 	task := &Task{
-		ID:          0,
-		StartAt:     startAt,
-		FinishAt:    finishAt,
-		Duration:    duration,
-		lastStartAt: time.Now(),
-		finished:    false,
+		ID:              0,
+		StartAt:         startAt,
+		FinishAt:        finishAt,
+		SecondsDuration: duration,
+		lastStartAt:     time.Now(),
+		finished:        false,
 	}
 
 	err := tm.storage.CreateTask(task)
@@ -111,7 +111,7 @@ func (tm *TaskManager) handleFinishTask() {
 func (tm *TaskManager) updateCurrentTaskDuration() error {
 	duration := int(time.Since(tm.currentTask.lastStartAt).Seconds())
 
-	tm.currentTask.Duration += duration
+	tm.currentTask.SecondsDuration += duration
 	tm.currentTask.FinishAt = time.Now()
 
 	err := tm.storage.UpdateTask(tm.currentTask)

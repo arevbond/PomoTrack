@@ -117,7 +117,7 @@ func (m *UIManager) newStatsButtons(start, end int, tasks []*Task) []*tview.Butt
 
 func (m *UIManager) newStatsTable(start, end int, tasks []*Task) *tview.Table {
 	table := tview.NewTable().SetBorders(true)
-	headers := []string{"Date", "Time", "Seconds", "Action"}
+	headers := []string{"Date", "Time", "Minutes", "Action"}
 
 	for col, header := range headers {
 		table.SetCell(0, col, tview.NewTableCell(header).SetAlign(tview.AlignCenter))
@@ -132,7 +132,7 @@ func (m *UIManager) newStatsTable(start, end int, tasks []*Task) *tview.Table {
 
 		table.SetCell(row, 0, tview.NewTableCell(dateStr).SetAlign(tview.AlignCenter))
 		table.SetCell(row, 1, tview.NewTableCell(timeStr).SetAlign(tview.AlignCenter))
-		table.SetCell(row, 2, tview.NewTableCell(strconv.Itoa(task.Duration)).SetAlign(tview.AlignCenter))
+		table.SetCell(row, 2, tview.NewTableCell(strconv.Itoa(task.SecondsDuration/60)).SetAlign(tview.AlignCenter))
 		table.SetCell(row, 3, tview.NewTableCell("[red] Delete [-]").SetAlign(tview.AlignCenter).SetSelectable(true))
 	}
 
@@ -210,7 +210,7 @@ func (m *UIManager) removeTask(tasks []*Task, taskIndex int) {
 func (m *UIManager) totalDuration(tasks []*Task) string {
 	var total int
 	for _, t := range tasks {
-		total += t.Duration
+		total += t.SecondsDuration
 	}
 	res := time.Duration(total) * time.Second
 	return res.String()
@@ -229,7 +229,7 @@ func (m *UIManager) pageInsertStatistics(start, end int, tasks []*Task) {
 	form := tview.NewForm().
 		SetHorizontal(true).
 		AddInputField("Time start", time.Now().Format("15:04"), 7, checkTimeInInput(), nil).
-		AddInputField("Seconds", "0", 5, tview.InputFieldInteger, nil)
+		AddInputField("Minutes", "0", 5, tview.InputFieldInteger, nil)
 
 	form.AddButton("Save", m.saveTask(form))
 
@@ -274,21 +274,21 @@ func checkTimeInInput() func(textToCheck string, lastChar rune) bool {
 func (m *UIManager) saveTask(form *tview.Form) func() {
 	return func() {
 		timeStartStr := form.GetFormItem(0).(*tview.InputField).GetText()
-		secondsStr := form.GetFormItem(1).(*tview.InputField).GetText()
+		minutesStr := form.GetFormItem(1).(*tview.InputField).GetText()
 
 		timeStart, err := time.Parse("15:04", timeStartStr)
 		if err != nil {
 			m.logger.Error("can't convert str to time", slog.String("input time", timeStartStr))
 			return
 		}
-		seconds, err := strconv.Atoi(secondsStr)
+		minutes, err := strconv.Atoi(minutesStr)
 		if err != nil {
-			m.logger.Error("can't convert seconds string to int", slog.String("input seconds", secondsStr))
+			m.logger.Error("can't convert seconds string to int", slog.String("input seconds", minutesStr))
 			return
 		}
 		dateStart := timeStart.AddDate(time.Now().Year(), int(time.Now().Month())-1, time.Now().Day()-1)
 
-		err = m.saveTaskFromForm(dateStart, seconds)
+		err = m.saveTaskFromForm(dateStart, minutes)
 		if err != nil {
 			m.logger.Error("can't create task", slog.Any("error", err))
 			m.switchToStatisticsPage(insertStatsPage)
@@ -298,8 +298,8 @@ func (m *UIManager) saveTask(form *tview.Form) func() {
 	}
 }
 
-func (m *UIManager) saveTaskFromForm(timeStart time.Time, duration int) error {
-	finishTime := timeStart.Add(time.Duration(duration) * time.Second)
-	_, err := m.taskManager.CreateNewTask(timeStart, finishTime, duration)
+func (m *UIManager) saveTaskFromForm(timeStart time.Time, minutes int) error {
+	finishTime := timeStart.Add(time.Duration(minutes) * time.Minute)
+	_, err := m.taskManager.CreateNewTask(timeStart, finishTime, minutes*60)
 	return err
 }
