@@ -32,7 +32,7 @@ func (m *UIManager) renderDetailStatsPage(start, end int, tasks []*Task) {
 
 	grid := tview.NewGrid().
 		SetRows(1, 0, 1, 1).
-		SetColumns(0, 25, 25, 0).
+		SetColumns(0, 23, 23, 0).
 		SetBorders(true)
 
 	grid.AddItem(text, 0, 1, 1, 2, 0, 0, false)
@@ -237,7 +237,7 @@ func (m *UIManager) renderInsertStatsPage(start, end int, tasks []*Task) {
 
 	grid := tview.NewGrid().
 		SetRows(1, 3, 0, 1, 1).
-		SetColumns(0, 25, 25, 0).
+		SetColumns(0, 23, 23, 0).
 		SetBorders(true)
 
 	grid.AddItem(text, 0, 1, 1, 2, 0, 0, false)
@@ -306,7 +306,7 @@ func (m *UIManager) saveTaskFromForm(timeStart time.Time, minutes int) error {
 	return err
 }
 
-func (m *UIManager) renderSummaryStatsPage(totalHours float64, totalDays int) {
+func (m *UIManager) renderSummaryStatsPage(totalHours float64, totalDays int, weekdayHours [7]int) {
 	table := tview.NewTable().
 		SetBorders(true)
 
@@ -316,12 +316,16 @@ func (m *UIManager) renderSummaryStatsPage(totalHours float64, totalDays int) {
 	table.SetCell(0, 1, tview.NewTableCell("Days accessed"))
 	table.SetCell(1, 1, tview.NewTableCell(strconv.Itoa(totalDays)).SetAlign(tview.AlignCenter))
 
+	bar := tview.NewTextView().
+		SetText("\n\n\n" + CreateBarGraph(weekdayHours))
+
 	grid := tview.NewGrid().
-		SetRows(0, 0).
-		SetColumns(0, 25, 25, 0).
+		SetRows(5, 15).
+		SetColumns(0, 40, 0).
 		SetBorders(true)
 
-	grid.AddItem(table, 0, 1, 2, 2, 0, 0, false)
+	grid.AddItem(table, 0, 1, 1, 1, 0, 0, false)
+	grid.AddItem(bar, 1, 1, 1, 1, 0, 0, false)
 
 	m.pages.AddPage(summaryStatsPage, grid, true, false)
 }

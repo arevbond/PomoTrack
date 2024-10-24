@@ -21,6 +21,7 @@ type taskTracker interface {
 	CreateNewTask(startAt time.Time, finishAt time.Time, duration int) (*Task, error)
 	Hours(tasks []*Task) float64
 	CountDays(tasks []*Task) int
+	HoursInWeek(tasks []*Task) [7]int
 }
 
 type UIManager struct {
@@ -123,7 +124,13 @@ func (m *UIManager) switchToSummaryStats() {
 		m.logger.Error("can't get all tasks", slog.Any("error", err))
 		return
 	}
-	m.renderSummaryStatsPage(m.taskTracker.Hours(tasks), m.taskTracker.CountDays(tasks))
+
+	m.renderSummaryStatsPage(
+		m.taskTracker.Hours(tasks),
+		m.taskTracker.CountDays(tasks),
+		m.taskTracker.HoursInWeek(tasks),
+	)
+
 	m.pages.SwitchToPage(summaryStatsPage)
 }
 

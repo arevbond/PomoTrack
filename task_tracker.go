@@ -103,6 +103,23 @@ func (tm *TaskManager) CountDays(tasks []*Task) int {
 	return count
 }
 
+func (tm *TaskManager) HoursInWeek(tasks []*Task) [7]int {
+	if len(tasks) == 0 {
+		return [7]int{}
+	}
+
+	var weekdayHours [7]int
+	firstDayIndx := time.Now().Day() - int(time.Now().Weekday()) + 1
+	lastDayIndx := time.Now().Day()
+	for _, task := range tasks {
+		if task.StartAt.Day() >= firstDayIndx && task.StartAt.Day() <= lastDayIndx {
+			weekdayHours[(task.FinishAt.Weekday()+6)%7] += task.SecondsDuration / 3600
+		}
+	}
+
+	return weekdayHours
+}
+
 func (tm *TaskManager) handleStartTask() {
 	// предыдущая задача не создана или завершена
 	// создаём новую пустую задачу
