@@ -317,6 +317,7 @@ func (m *UIManager) renderSummaryStatsPage(totalHours float64, totalDays int, we
 	table.SetCell(1, 1, tview.NewTableCell(strconv.Itoa(totalDays)).SetAlign(tview.AlignCenter))
 
 	bar := tview.NewTextView().
+		SetDynamicColors(true).
 		SetText("\n\n\n" + CreateBarGraph(weekdayHours))
 
 	grid := tview.NewGrid().

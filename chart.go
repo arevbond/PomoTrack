@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 func CreateBarGraph(data [7]int) string {
@@ -25,7 +26,10 @@ func CreateBarGraph(data [7]int) string {
 	}
 
 	graph.WriteString("    ")
-	for _, day := range []string{"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"} {
+	for i, day := range []string{"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"} {
+		if int((time.Now().Weekday()+6)%7) == i {
+			day = fmt.Sprintf("[green]%s[-]", day)
+		}
 		graph.WriteString(day + "  ")
 	}
 	graph.WriteString("\n    ---------------------------------")
