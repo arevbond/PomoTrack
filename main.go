@@ -45,6 +45,6 @@ func initLogger(logFilePath string) (*slog.Logger, error) {
 	slog.SetDefault(logger)
 
 	log.SetOutput(file)
-
+	fmt.Println("HHELO WORLD")
 	return logger, nil
 }
