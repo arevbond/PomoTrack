@@ -25,6 +25,7 @@ func CreateBarGraph(data [7]int) string {
 		graph.WriteString("\n")
 	}
 
+	graph.WriteString("    ---------------------------------\n")
 	graph.WriteString("    ")
 	for i, day := range []string{"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"} {
 		if int((time.Now().Weekday()+6)%7) == i {
@@ -32,7 +33,6 @@ func CreateBarGraph(data [7]int) string {
 		}
 		graph.WriteString(day + "  ")
 	}
-	graph.WriteString("\n    ---------------------------------")
 	graph.WriteString("\n")
 
 	return graph.String()
