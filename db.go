@@ -53,12 +53,11 @@ func (s *Storage) RemoveTask(id int) error {
 	return nil
 }
 
-func (s *Storage) GetTasks(limit int) ([]*Task, error) {
+func (s *Storage) GetTasks() ([]*Task, error) {
 	query := `SELECT id, start_at, finish_at, duration
 			FROM tasks
-			ORDER BY start_at DESC 
-			LIMIT ?`
-	return s.fetchTasks(query, limit)
+			ORDER BY start_at DESC`
+	return s.fetchTasks(query)
 }
 
 func (s *Storage) GetTodayTasks() ([]*Task, error) {

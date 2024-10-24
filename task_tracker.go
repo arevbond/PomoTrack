@@ -48,8 +48,8 @@ func (tm *TaskManager) HandleTaskStateChanges() {
 	}
 }
 
-func (tm *TaskManager) Tasks(limit int) ([]*Task, error) {
-	return tm.storage.GetTasks(limit)
+func (tm *TaskManager) Tasks() ([]*Task, error) {
+	return tm.storage.GetTasks()
 }
 
 func (tm *TaskManager) TodayTasks() ([]*Task, error) {
@@ -75,6 +75,49 @@ func (tm *TaskManager) CreateNewTask(startAt time.Time, finishAt time.Time, dura
 		return nil, fmt.Errorf("can't create task: %w", err)
 	}
 	return task, nil
+}
+
+func (tm *TaskManager) Hours(tasks []*Task) float64 {
+	var result time.Duration
+	for _, task := range tasks {
+		result += time.Duration(task.SecondsDuration) * time.Second
+	}
+	return result.Hours()
+}
+
+func (tm *TaskManager) CountDays(tasks []*Task) int {
+	if len(tasks) == 0 {
+		return 0
+	}
+
+	count := 1
+	for i := 1; i < len(tasks); i++ {
+		prev := tasks[i-1]
+		cur := tasks[i]
+
+		if prev.StartAt.Day() != cur.StartAt.Day() {
+			count++
+		}
+	}
+
+	return count
+}
+
+func (tm *TaskManager) HoursInWeek(tasks []*Task) [7]int {
+	if len(tasks) == 0 {
+		return [7]int{}
+	}
+
+	var weekdayHours [7]int
+	firstDayIndx := time.Now().Day() - int(time.Now().Weekday()) + 1
+	lastDayIndx := time.Now().Day()
+	for _, task := range tasks {
+		if task.StartAt.Day() >= firstDayIndx && task.StartAt.Day() <= lastDayIndx {
+			weekdayHours[(task.FinishAt.Weekday()+6)%7] += task.SecondsDuration / 3600
+		}
+	}
+
+	return weekdayHours
 }
 
 func (tm *TaskManager) handleStartTask() {

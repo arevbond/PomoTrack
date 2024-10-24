@@ -12,13 +12,15 @@ import (
 )
 
 const (
-	statsPage       = "Statistics"
+	detailStatsPage = "Detail-Statistics"
 	insertStatsPage = "Insert-Statistics"
+
+	summaryStatsPage = "Summary-Statistics"
 )
 
 const statisticsPageSize = 6
 
-func (m *UIManager) renderStatsPage(start, end int, tasks []*Task) {
+func (m *UIManager) renderDetailStatsPage(start, end int, tasks []*Task) {
 	table := m.newStatsTable(start, end, tasks)
 
 	buttons := m.newStatsButtons(start, end, tasks)
@@ -30,7 +32,7 @@ func (m *UIManager) renderStatsPage(start, end int, tasks []*Task) {
 
 	grid := tview.NewGrid().
 		SetRows(1, 0, 1, 1).
-		SetColumns(0, 25, 25, 0).
+		SetColumns(0, 23, 23, 0).
 		SetBorders(true)
 
 	grid.AddItem(text, 0, 1, 1, 2, 0, 0, false)
@@ -43,7 +45,7 @@ func (m *UIManager) renderStatsPage(start, end int, tasks []*Task) {
 
 	grid.SetInputCapture(m.captureStatsInput(table, buttons))
 
-	m.pages.AddPage(statsPage, grid, true, false)
+	m.pages.AddPage(detailStatsPage, grid, true, false)
 }
 
 func (m *UIManager) captureStatsInput(
@@ -93,8 +95,8 @@ func (m *UIManager) newStatsButtons(start, end int, tasks []*Task) []*tview.Butt
 
 	if start >= statisticsPageSize {
 		prevButton := tview.NewButton("Prev").SetSelectedFunc(func() {
-			m.renderStatsPage(start-statisticsPageSize, start, tasks)
-			m.pages.SwitchToPage(statsPage)
+			m.renderDetailStatsPage(start-statisticsPageSize, start, tasks)
+			m.pages.SwitchToPage(detailStatsPage)
 		})
 
 		buttons = append(buttons, prevButton)
@@ -102,11 +104,11 @@ func (m *UIManager) newStatsButtons(start, end int, tasks []*Task) []*tview.Butt
 	if end < len(tasks) {
 		nextButton := tview.NewButton("Next").SetSelectedFunc(func() {
 			if end+5 < len(tasks) {
-				m.renderStatsPage(end, end+statisticsPageSize, tasks)
+				m.renderDetailStatsPage(end, end+statisticsPageSize, tasks)
 			} else {
-				m.renderStatsPage(end, len(tasks), tasks)
+				m.renderDetailStatsPage(end, len(tasks), tasks)
 			}
-			m.pages.SwitchToPage(statsPage)
+			m.pages.SwitchToPage(detailStatsPage)
 		})
 
 		buttons = append(buttons, nextButton)
@@ -193,18 +195,18 @@ func (m *UIManager) handleVerticalNavigation(table *tview.Table, row, col int, k
 }
 
 func (m *UIManager) removeTask(tasks []*Task, taskIndex int) {
-	err := m.taskManager.RemoveTask(tasks[taskIndex].ID)
+	err := m.taskTracker.RemoveTask(tasks[taskIndex].ID)
 	if err != nil {
 		m.logger.Error("Can't delete task", slog.Any("id", tasks[taskIndex].ID))
 	}
 
 	tasks = append(tasks[:taskIndex], tasks[taskIndex+1:]...)
 	if len(tasks) > 5 {
-		m.renderStatsPage(0, statisticsPageSize, tasks)
+		m.renderDetailStatsPage(0, statisticsPageSize, tasks)
 	} else {
-		m.renderStatsPage(0, len(tasks), tasks)
+		m.renderDetailStatsPage(0, len(tasks), tasks)
 	}
-	m.pages.SwitchToPage(statsPage)
+	m.pages.SwitchToPage(detailStatsPage)
 }
 
 func (m *UIManager) totalDuration(tasks []*Task) string {
@@ -216,7 +218,7 @@ func (m *UIManager) totalDuration(tasks []*Task) string {
 	return res.String()
 }
 
-func (m *UIManager) pageInsertStatistics(start, end int, tasks []*Task) {
+func (m *UIManager) renderInsertStatsPage(start, end int, tasks []*Task) {
 	table := m.newStatsTable(start, end, tasks)
 
 	buttons := m.newStatsButtons(start, end, tasks)
@@ -235,7 +237,7 @@ func (m *UIManager) pageInsertStatistics(start, end int, tasks []*Task) {
 
 	grid := tview.NewGrid().
 		SetRows(1, 3, 0, 1, 1).
-		SetColumns(0, 25, 25, 0).
+		SetColumns(0, 23, 23, 0).
 		SetBorders(true)
 
 	grid.AddItem(text, 0, 1, 1, 2, 0, 0, false)
@@ -291,15 +293,39 @@ func (m *UIManager) saveTask(form *tview.Form) func() {
 		err = m.saveTaskFromForm(dateStart, minutes)
 		if err != nil {
 			m.logger.Error("can't create task", slog.Any("error", err))
-			m.switchToStatisticsPage(insertStatsPage)
+			m.switchToDetailStats(insertStatsPage)
 			return
 		}
-		m.switchToStatisticsPage(statsPage)
+		m.switchToDetailStats(detailStatsPage)
 	}
 }
 
 func (m *UIManager) saveTaskFromForm(timeStart time.Time, minutes int) error {
 	finishTime := timeStart.Add(time.Duration(minutes) * time.Minute)
-	_, err := m.taskManager.CreateNewTask(timeStart, finishTime, minutes*60)
+	_, err := m.taskTracker.CreateNewTask(timeStart, finishTime, minutes*60)
 	return err
+}
+
+func (m *UIManager) renderSummaryStatsPage(totalHours float64, totalDays int, weekdayHours [7]int) {
+	table := tview.NewTable().
+		SetBorders(true)
+
+	table.SetCell(0, 0, tview.NewTableCell("Hours focused"))
+	table.SetCell(1, 0, tview.NewTableCell(fmt.Sprintf("%.2f", totalHours)).SetAlign(tview.AlignCenter))
+
+	table.SetCell(0, 1, tview.NewTableCell("Days accessed"))
+	table.SetCell(1, 1, tview.NewTableCell(strconv.Itoa(totalDays)).SetAlign(tview.AlignCenter))
+
+	bar := tview.NewTextView().
+		SetText("\n\n\n" + CreateBarGraph(weekdayHours))
+
+	grid := tview.NewGrid().
+		SetRows(5, 15).
+		SetColumns(0, 40, 0).
+		SetBorders(true)
+
+	grid.AddItem(table, 0, 1, 1, 1, 0, 0, false)
+	grid.AddItem(bar, 1, 1, 1, 1, 0, 0, false)
+
+	m.pages.AddPage(summaryStatsPage, grid, true, false)
 }

@@ -136,7 +136,7 @@ func TestStorage_GetTasks(t *testing.T) {
 	}
 
 	const expectedLen = 50
-	tasks, err := s.GetTasks(expectedLen)
+	tasks, err := s.GetTasks()
 	require.NoError(t, err)
 	require.Len(t, tasks, expectedLen)
 
