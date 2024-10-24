@@ -33,6 +33,9 @@ type UIManager struct {
 
 	taskTracker      taskTracker
 	stateTaskUpdates chan StateChangeEvent
+
+	allowedTransitions map[string][]string
+	keyPageMapping     map[tcell.Key]string
 }
 
 type StateChangeEvent struct {
@@ -46,13 +49,35 @@ func NewUIManager(logger *slog.Logger, cfg *config.Config, events chan StateChan
 	breakTimer := NewBreakTimer(cfg.Timer.BreakDuration)
 
 	return &UIManager{
-		ui:               tview.NewApplication(),
-		pages:            tview.NewPages(),
-		logger:           logger,
-		stateManager:     NewStateManager(logger, focusTimer, breakTimer, stateChangeChan, cfg.Timer),
-		stateUpdates:     stateChangeChan,
-		taskTracker:      tm,
-		stateTaskUpdates: events,
+		ui:                 tview.NewApplication(),
+		pages:              tview.NewPages(),
+		logger:             logger,
+		stateManager:       NewStateManager(logger, focusTimer, breakTimer, stateChangeChan, cfg.Timer),
+		stateUpdates:       stateChangeChan,
+		taskTracker:        tm,
+		stateTaskUpdates:   events,
+		allowedTransitions: constructAllowedTransitions(),
+		keyPageMapping:     constructKeyPageMap(),
+	}
+}
+
+func constructAllowedTransitions() map[string][]string {
+	return map[string][]string{
+		pauseFocusPage:   {detailStatsPage, pauseBreakPage, summaryStatsPage},
+		pauseBreakPage:   {detailStatsPage, pauseFocusPage, summaryStatsPage},
+		detailStatsPage:  {pauseFocusPage, pauseBreakPage, insertStatsPage, summaryStatsPage},
+		insertStatsPage:  {detailStatsPage},
+		summaryStatsPage: {pauseFocusPage, pauseBreakPage, insertStatsPage, detailStatsPage},
+	}
+}
+
+func constructKeyPageMap() map[tcell.Key]string {
+	return map[tcell.Key]string{
+		tcell.KeyF1:    pauseFocusPage,
+		tcell.KeyF2:    pauseBreakPage,
+		tcell.KeyF3:    detailStatsPage,
+		tcell.KeyCtrlI: insertStatsPage,
+		tcell.KeyF4:    summaryStatsPage,
 	}
 }
 
@@ -67,35 +92,34 @@ func (m *UIManager) setKeyboardEvents() {
 	m.ui.SetInputCapture(m.keyboardEvents)
 }
 
+func (m *UIManager) canSwitchTo(targetPage string) bool {
+	curPage, _ := m.pages.GetFrontPage()
+
+	allowedPages, ok := m.allowedTransitions[targetPage]
+	if !ok {
+		return false
+	}
+	for _, allowedPage := range allowedPages {
+		if curPage == allowedPage {
+			return true
+		}
+	}
+	return false
+}
+
 func (m *UIManager) keyboardEvents(event *tcell.EventKey) *tcell.EventKey {
-	switch event.Key() {
-	case tcell.KeyF1:
-		availablePages := []string{detailStatsPage, pauseBreakPage}
-		if !m.currentPageIs(availablePages) {
-			return event
-		}
-		m.pages.SwitchToPage(pauseFocusPage)
-	case tcell.KeyF2:
-		availablePages := []string{detailStatsPage, pauseFocusPage}
-		if !m.currentPageIs(availablePages) {
-			return event
-		}
-		m.pages.SwitchToPage(pauseBreakPage)
-	case tcell.KeyF3:
-		availablePages := []string{pauseFocusPage, pauseBreakPage, insertStatsPage, summaryStatsPage}
-		if m.currentPageIs(availablePages) {
-			m.switchToDetailStats(detailStatsPage)
-		}
-	case tcell.KeyCtrlI:
-		availablePages := []string{detailStatsPage}
-		if m.currentPageIs(availablePages) {
-			m.switchToDetailStats(insertStatsPage)
-		}
-	case tcell.KeyF4:
-		availablePages := []string{pauseFocusPage, pauseBreakPage, insertStatsPage, detailStatsPage}
-		if m.currentPageIs(availablePages) {
-			m.switchToSummaryStats()
-		}
+	targetPage, exists := m.keyPageMapping[event.Key()]
+	if !exists || !m.canSwitchTo(targetPage) {
+		return event
+	}
+
+	switch targetPage {
+	case pauseFocusPage, pauseBreakPage:
+		m.pages.SwitchToPage(targetPage)
+	case detailStatsPage, insertStatsPage:
+		m.switchToDetailStats(targetPage)
+	case summaryStatsPage:
+		m.switchToSummaryStats()
 	default:
 		return event
 	}
@@ -132,16 +156,6 @@ func (m *UIManager) switchToSummaryStats() {
 	)
 
 	m.pages.SwitchToPage(summaryStatsPage)
-}
-
-func (m *UIManager) currentPageIs(pages []string) bool {
-	name, _ := m.pages.GetFrontPage()
-	for _, pageName := range pages {
-		if name == pageName {
-			return true
-		}
-	}
-	return false
 }
 
 func (m *UIManager) InitStateAndKeyboardHandling() {
