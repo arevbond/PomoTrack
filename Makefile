@@ -35,3 +35,6 @@ coverage:
 
 migrations:
 	@goose -dir=./migrations sqlite3 ./database.db up
+
+count-lines:
+	@grep -r -h . *.go | wc -l
