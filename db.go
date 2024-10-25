@@ -11,7 +11,7 @@ type Storage struct {
 	DB *sql.DB
 }
 
-func newStorage(filename string) (*Storage, error) {
+func NewStorage(filename string) (*Storage, error) {
 	db, err := sql.Open("sqlite3", filename)
 	if err != nil {
 		return nil, fmt.Errorf("can't connect to db: %w", err)
@@ -20,9 +20,11 @@ func newStorage(filename string) (*Storage, error) {
 }
 
 func (s *Storage) CreateTask(task *Task) error {
-	query := `INSERT INTO tasks (start_at) VALUES (?) RETURNING id;`
+	query := `INSERT INTO tasks (start_at, finish_at, duration) VALUES (?, ?, ?) RETURNING id;`
 
-	err := s.DB.QueryRow(query, task.StartAt).Scan(&task.ID)
+	args := []any{task.StartAt, task.FinishAt, task.SecondsDuration}
+
+	err := s.DB.QueryRow(query, args...).Scan(&task.ID)
 	if err != nil {
 		return fmt.Errorf("can't create task: %w", err)
 	}
@@ -32,7 +34,7 @@ func (s *Storage) CreateTask(task *Task) error {
 func (s *Storage) UpdateTask(task *Task) error {
 	query := `UPDATE tasks SET finish_at = ?, duration = ? WHERE id = ?;`
 
-	args := []any{task.FinishAt, task.Duration, task.ID}
+	args := []any{task.FinishAt, task.SecondsDuration, task.ID}
 
 	_, err := s.DB.Exec(query, args...)
 	if err != nil {
@@ -41,12 +43,21 @@ func (s *Storage) UpdateTask(task *Task) error {
 	return nil
 }
 
-func (s *Storage) GetTasks(limit int) ([]*Task, error) {
+func (s *Storage) RemoveTask(id int) error {
+	query := `DELETE FROM tasks WHERE id = ?`
+
+	_, err := s.DB.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("can't remove task: %w", err)
+	}
+	return nil
+}
+
+func (s *Storage) GetTasks() ([]*Task, error) {
 	query := `SELECT id, start_at, finish_at, duration
 			FROM tasks
-			ORDER BY start_at DESC 
-			LIMIT ?`
-	return s.fetchTasks(query, limit)
+			ORDER BY start_at DESC`
+	return s.fetchTasks(query)
 }
 
 func (s *Storage) GetTodayTasks() ([]*Task, error) {
@@ -70,7 +81,7 @@ func (s *Storage) fetchTasks(query string, args ...any) ([]*Task, error) {
 	for rows.Next() {
 		var task Task
 
-		err = rows.Scan(&task.ID, &task.StartAt, &task.FinishAt, &task.Duration)
+		err = rows.Scan(&task.ID, &task.StartAt, &task.FinishAt, &task.SecondsDuration)
 		if err != nil {
 			return nil, fmt.Errorf("can't scan task: %w", err)
 		}

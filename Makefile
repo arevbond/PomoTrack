@@ -1,22 +1,17 @@
-# Переменные
 APP_NAME = PomoTrack
 BUILD_DIR = build
 GO_FILES = $(shell find . -name '*.go')
 
-# Запуск приложения
 run:
 	@go run .
 
-# Запуск тестов
 test:
 	@go test ./...
 
-# Установка зависимостей
 deps:
 	go mod tidy
 	go mod vendor
 
-# Форматирование кода
 fmt:
 	go fmt ./...
 
@@ -38,3 +33,8 @@ verify:
 coverage:
 	go test -coverprofile=c.out ./...
 
+migrations:
+	@goose -dir=./migrations sqlite3 ./database.db up
+
+count-lines:
+	@grep -r -h . *.go | wc -l

@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 
 func setup() error {
 	var err error
-	s, err = newStorage(testDBName)
+	s, err = NewStorage(testDBName)
 	if err != nil {
 		return err
 	}
@@ -64,13 +64,13 @@ func TestStorage_CreateTask(t *testing.T) {
 
 	var taskFromDB Task
 	err = s.DB.QueryRow(`SELECT * FROM tasks;`).Scan(&taskFromDB.ID, &taskFromDB.StartAt,
-		&taskFromDB.FinishAt, &taskFromDB.Duration)
+		&taskFromDB.FinishAt, &taskFromDB.SecondsDuration)
 	require.NoError(t, err)
 
 	require.Equal(t, task.ID, taskFromDB.ID)
 	require.WithinDuration(t, task.StartAt, taskFromDB.StartAt, time.Second)
 	require.WithinDuration(t, task.FinishAt, taskFromDB.FinishAt, time.Second)
-	require.Equal(t, task.Duration, taskFromDB.Duration)
+	require.Equal(t, task.SecondsDuration, taskFromDB.SecondsDuration)
 
 	clearTable()
 }
@@ -85,20 +85,20 @@ func TestStorage_UpdateTask(t *testing.T) {
 	require.NoError(t, err)
 
 	task.FinishAt = time.Now().Add(60 * time.Second)
-	task.Duration = 60
+	task.SecondsDuration = 60
 
 	err = s.UpdateTask(task)
 	require.NoError(t, err)
 
 	var taskFromDB Task
 	err = s.DB.QueryRow(`SELECT * FROM tasks;`).Scan(&taskFromDB.ID, &taskFromDB.StartAt,
-		&taskFromDB.FinishAt, &taskFromDB.Duration)
+		&taskFromDB.FinishAt, &taskFromDB.SecondsDuration)
 	require.NoError(t, err)
 
 	require.Equal(t, task.ID, taskFromDB.ID)
 	require.WithinDuration(t, task.StartAt, taskFromDB.StartAt, time.Second)
 	require.WithinDuration(t, task.FinishAt, taskFromDB.FinishAt, time.Second)
-	require.Equal(t, task.Duration, taskFromDB.Duration)
+	require.Equal(t, task.SecondsDuration, taskFromDB.SecondsDuration)
 
 	clearTable()
 }
@@ -135,8 +135,8 @@ func TestStorage_GetTasks(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	const expectedLen = 50
-	tasks, err := s.GetTasks(expectedLen)
+	const expectedLen = 100
+	tasks, err := s.GetTasks()
 	require.NoError(t, err)
 	require.Len(t, tasks, expectedLen)
 
