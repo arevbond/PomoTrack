@@ -37,7 +37,6 @@ type UIManager struct {
 	allowedTransitions map[string][]string
 	keyPageMapping     map[tcell.Key]string
 }
-
 type StateChangeEvent struct {
 	TimerType TimerType
 	NewState  TimerState

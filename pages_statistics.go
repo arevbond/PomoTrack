@@ -30,14 +30,16 @@ func (m *UIManager) renderDetailStatsPage(start, end int, tasks []*Task) {
 		SetText(fmt.Sprintf("Total: %s", m.totalDuration(tasks))).
 		SetDynamicColors(true)
 
+	hotKeysPanel := constructBottomPanel(insertStatsPage)
+
 	grid := tview.NewGrid().
-		SetRows(1, 0, 1, 1).
+		SetRows(1, 0, 1, 5, 1).
 		SetColumns(0, 23, 23, 0).
 		SetBorders(true)
 
 	grid.AddItem(text, 0, 1, 1, 2, 0, 0, false)
-
 	grid.AddItem(table, 1, 1, 1, 2, 0, 0, true)
+	grid.AddItem(hotKeysPanel, 4, 0, 1, 4, 0, 0, false)
 
 	for i, button := range buttons {
 		grid.AddItem(button, 2, i+1, 1, 1, 0, 0, true)
@@ -320,13 +322,16 @@ func (m *UIManager) renderSummaryStatsPage(totalHours float64, totalDays int, we
 		SetDynamicColors(true).
 		SetText("\n\n\n" + CreateBarGraph(weekdayHours))
 
+	hotKeysPanel := constructBottomPanel(insertStatsPage)
+
 	grid := tview.NewGrid().
-		SetRows(5, 15).
+		SetRows(5, 15, 0, 1).
 		SetColumns(0, 40, 0).
 		SetBorders(true)
 
 	grid.AddItem(table, 0, 1, 1, 1, 0, 0, false)
 	grid.AddItem(bar, 1, 1, 1, 1, 0, 0, false)
+	grid.AddItem(hotKeysPanel, 3, 0, 1, 3, 0, 0, false)
 
 	m.pages.AddPage(summaryStatsPage, grid, true, false)
 }

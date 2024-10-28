@@ -30,14 +30,17 @@ func (m *UIManager) renderPausePage(pageName string, title string, timerType Tim
 		m.stateManager.SetState(StateActive, timerType)
 	})
 
+	hotKeysPanel := constructBottomPanel(pageName)
+
 	grid := tview.NewGrid().
-		SetRows(0, 3, 3, 1, 0).
+		SetRows(0, 3, 3, 1, 0, 1).
 		SetColumns(0, 30, 0).
 		SetBorders(true)
 
 	grid.AddItem(pauseText, 1, 1, 1, 1, 0, 0, false)
 	grid.AddItem(durationText, 2, 1, 1, 1, 0, 0, false)
 	grid.AddItem(startButton, 3, 1, 1, 1, 0, 0, true)
+	grid.AddItem(hotKeysPanel, 5, 0, 1, 3, 0, 0, false)
 
 	m.pages.AddPage(pageName, grid, true, true)
 }
@@ -67,7 +70,7 @@ func (m *UIManager) renderActivePage(pageName string, color, title string, timer
 	})
 
 	grid := tview.NewGrid().
-		SetRows(0, 3, 3, 1, 0).
+		SetRows(0, 3, 3, 1, 0, 1).
 		SetColumns(0, 25, 5, 0).
 		SetBorders(true)
 
