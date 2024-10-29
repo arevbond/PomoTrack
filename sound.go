@@ -10,7 +10,7 @@ import (
 )
 
 func playClickSound() {
-	file, err := f.Open("assets/click-sound2.mp3")
+	file, err := f.Open("sounds/click-sound2.mp3")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,7 +32,7 @@ func playClickSound() {
 }
 
 func playEndSound() {
-	file, err := f.Open("assets/end-sound.mp3")
+	file, err := f.Open("sounds/end-sound.mp3")
 	if err != nil {
 		log.Fatal(err)
 	}

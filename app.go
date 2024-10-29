@@ -7,7 +7,7 @@ import (
 	"github.com/arevbond/PomoTrack/config"
 )
 
-//go:embed assets
+//go:embed sounds
 var f embed.FS
 
 type Application struct {
