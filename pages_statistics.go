@@ -39,7 +39,7 @@ func (m *UIManager) renderDetailStatsPage(start, end int, tasks []*Task) {
 
 	grid.AddItem(text, 0, 1, 1, 2, 0, 0, false)
 	grid.AddItem(table, 1, 1, 1, 2, 0, 0, true)
-	grid.AddItem(hotKeysPanel, 4, 0, 1, 4, 0, 0, false)
+	grid.AddItem(hotKeysPanel, 4, 1, 1, 2, 0, 0, false)
 
 	for i, button := range buttons {
 		grid.AddItem(button, 2, i+1, 1, 1, 0, 0, true)
@@ -287,8 +287,8 @@ func (m *UIManager) saveTask(form *tview.Form) func() {
 		}
 		minutes, err := strconv.Atoi(minutesStr)
 		if err != nil {
+			minutes = 0
 			m.logger.Error("can't convert seconds string to int", slog.String("input seconds", minutesStr))
-			return
 		}
 		dateStart := timeStart.AddDate(time.Now().Year(), int(time.Now().Month())-1, time.Now().Day()-1)
 
@@ -331,7 +331,7 @@ func (m *UIManager) renderSummaryStatsPage(totalHours float64, totalDays int, we
 
 	grid.AddItem(table, 0, 1, 1, 1, 0, 0, false)
 	grid.AddItem(bar, 1, 1, 1, 1, 0, 0, false)
-	grid.AddItem(hotKeysPanel, 3, 0, 1, 3, 0, 0, false)
+	grid.AddItem(hotKeysPanel, 3, 1, 1, 1, 0, 0, false)
 
 	m.pages.AddPage(summaryStatsPage, grid, true, false)
 }
