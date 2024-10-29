@@ -22,6 +22,7 @@ type taskTracker interface {
 	Hours(tasks []*Task) float64
 	CountDays(tasks []*Task) int
 	HoursInWeek(tasks []*Task) [7]int
+	FinishRunningTask()
 }
 
 type UIManager struct {
@@ -37,7 +38,6 @@ type UIManager struct {
 	allowedTransitions map[string][]string
 	keyPageMapping     map[tcell.Key]string
 }
-
 type StateChangeEvent struct {
 	TimerType TimerType
 	NewState  TimerState
@@ -108,6 +108,11 @@ func (m *UIManager) canSwitchTo(targetPage string) bool {
 }
 
 func (m *UIManager) keyboardEvents(event *tcell.EventKey) *tcell.EventKey {
+	if event.Key() == tcell.KeyCtrlC {
+		m.taskTracker.FinishRunningTask()
+		m.ui.Stop()
+	}
+
 	targetPage, exists := m.keyPageMapping[event.Key()]
 	if !exists || !m.canSwitchTo(targetPage) {
 		return event

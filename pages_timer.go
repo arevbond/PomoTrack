@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -15,6 +16,14 @@ const (
 	pauseBreakPage  = "Stop-Break"
 )
 
+func formatDuration(d time.Duration) string {
+	totalSeconds := int(d.Seconds())
+
+	minutes := totalSeconds / 60
+	seconds := totalSeconds % 60
+	return fmt.Sprintf("%02d:%02d", minutes, seconds)
+}
+
 func (m *UIManager) renderPausePage(pageName string, title string, timerType TimerType) {
 	pauseText := tview.NewTextView().
 		SetDynamicColors(true).
@@ -24,20 +33,23 @@ func (m *UIManager) renderPausePage(pageName string, title string, timerType Tim
 	durationText := tview.NewTextView().
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter).
-		SetText(m.stateManager.timeToFinish(timerType).String())
+		SetText(formatDuration(m.stateManager.timeToFinish(timerType)))
 
-	startButton := tview.NewButton("Start").SetSelectedFunc(func() {
+	startButton := tview.NewButton("▶ Start").SetSelectedFunc(func() {
 		m.stateManager.SetState(StateActive, timerType)
 	})
 
+	hotKeysPanel := constructBottomPanel(pageName)
+
 	grid := tview.NewGrid().
-		SetRows(0, 3, 3, 1, 0).
-		SetColumns(0, 30, 0).
+		SetRows(0, 1, 3, 1, 0, 1).
+		SetColumns(0, 0, 15, 0, 0).
 		SetBorders(true)
 
-	grid.AddItem(pauseText, 1, 1, 1, 1, 0, 0, false)
-	grid.AddItem(durationText, 2, 1, 1, 1, 0, 0, false)
-	grid.AddItem(startButton, 3, 1, 1, 1, 0, 0, true)
+	grid.AddItem(pauseText, 1, 2, 1, 1, 0, 0, false)
+	grid.AddItem(durationText, 2, 2, 1, 1, 0, 0, false)
+	grid.AddItem(startButton, 3, 2, 1, 1, 0, 0, true)
+	grid.AddItem(hotKeysPanel, 5, 1, 1, 3, 0, 0, false)
 
 	m.pages.AddPage(pageName, grid, true, true)
 }
@@ -53,7 +65,7 @@ func (m *UIManager) renderActivePage(pageName string, color, title string, timer
 		SetTextAlign(tview.AlignCenter).
 		SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
 			tview.Print(screen, fmt.Sprintf("[%s]%s[-]", color,
-				m.stateManager.timeToFinish(timerType).String()),
+				formatDuration(m.stateManager.timeToFinish(timerType))),
 				x, y+height/4, width, tview.AlignCenter, tcell.ColorLime)
 			return 0, 0, 0, 0
 		})
@@ -67,8 +79,8 @@ func (m *UIManager) renderActivePage(pageName string, color, title string, timer
 	})
 
 	grid := tview.NewGrid().
-		SetRows(0, 3, 3, 1, 0).
-		SetColumns(0, 25, 5, 0).
+		SetRows(0, 1, 3, 1, 0, 1).
+		SetColumns(0, 15, 5, 0).
 		SetBorders(true)
 
 	grid.AddItem(breakText, 1, 1, 1, 2, 0, 0, false)

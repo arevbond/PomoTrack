@@ -120,6 +120,12 @@ func (tm *TaskManager) HoursInWeek(tasks []*Task) [7]int {
 	return weekdayHours
 }
 
+func (tm *TaskManager) FinishRunningTask() {
+	if tm.currentTask != nil && !tm.currentTask.finished {
+		tm.handleFinishTask()
+	}
+}
+
 func (tm *TaskManager) handleStartTask() {
 	// предыдущая задача не создана или завершена
 	// создаём новую пустую задачу
