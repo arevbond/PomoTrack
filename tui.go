@@ -82,7 +82,7 @@ func constructKeyPageMap() map[tcell.Key]string {
 }
 
 func (m *UIManager) DefaultTimerPages() {
-	m.renderActivePage(activeFocusPage, "purple", "Pomodoro", FocusTimer)
+	m.renderActivePage(activeFocusPage, "red", "Pomodoro", FocusTimer)
 	m.renderActivePage(activeBreakPage, "green", "Break", BreakTimer)
 	m.renderPausePage(pauseBreakPage, "Break", BreakTimer)
 	m.renderPausePage(pauseFocusPage, "Pomodoro", FocusTimer)

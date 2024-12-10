@@ -131,7 +131,7 @@ func (m *UIManager) newStatsTable(start, end int, tasks []*Task) *tview.Table {
 		row := i + 1
 
 		dateStr := task.StartAt.Format("02-Jan-2006")
-		const timeFormat = "15:04:05"
+		const timeFormat = "15:04"
 		timeStr := fmt.Sprintf("%s-%s", task.StartAt.Format(timeFormat), task.FinishAt.Format(timeFormat))
 
 		table.SetCell(row, 0, tview.NewTableCell(dateStr).SetAlign(tview.AlignCenter))
