@@ -277,8 +277,8 @@ func checkTimeInInput() func(textToCheck string, lastChar rune) bool {
 
 func (m *UIManager) saveTask(form *tview.Form) func() {
 	return func() {
-		timeStartStr := form.GetFormItem(0).(*tview.InputField).GetText()
-		minutesStr := form.GetFormItem(1).(*tview.InputField).GetText()
+		timeStartStr := form.GetFormItem(0).(*tview.InputField).GetText() //nolint:errcheck // simple parsing
+		minutesStr := form.GetFormItem(1).(*tview.InputField).GetText()   //nolint:errcheck // simple parsing
 
 		timeStart, err := time.Parse("15:04", timeStartStr)
 		if err != nil {
