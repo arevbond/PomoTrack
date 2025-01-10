@@ -1,10 +1,13 @@
 package config
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -20,7 +23,7 @@ type TimerConfig struct {
 }
 
 const (
-	configName           = "config/config.yaml"
+	configName           = ".pomotrack-config.yaml"
 	defaultFocusDuration = 25 * time.Minute
 	defaultBreakDuration = 5 * time.Minute
 )
@@ -34,7 +37,8 @@ func Init() (*Config, error) {
 
 	flag.Parse()
 
-	config, err := readConfig()
+	configPath := getConfigPath()
+	config, err := readConfig(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("can't read config: %w", err)
 	}
@@ -47,7 +51,7 @@ func Init() (*Config, error) {
 			config.Timer.BreakDuration = breakDurationFlag
 		}
 
-		if err = writeConfig(config); err != nil {
+		if err = writeConfig(config, configPath); err != nil {
 			return nil, fmt.Errorf("can't write config: %w", err)
 		}
 	}
@@ -61,7 +65,7 @@ func Init() (*Config, error) {
 			config.Timer.BreakDuration = defaultBreakDuration
 		}
 
-		if err = writeConfig(config); err != nil {
+		if err = writeConfig(config, configPath); err != nil {
 			return nil, fmt.Errorf("can't write config: %w", err)
 		}
 	}
@@ -69,10 +73,10 @@ func Init() (*Config, error) {
 	return config, nil
 }
 
-func readConfig() (*Config, error) {
+func readConfig(configPath string) (*Config, error) {
 	var config Config
 
-	file, err := os.OpenFile(configName, os.O_RDONLY|os.O_CREATE, 0644)
+	file, err := os.OpenFile(configPath, os.O_RDONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return nil, fmt.Errorf("can't open file: %w", err)
 	}
@@ -90,13 +94,33 @@ func readConfig() (*Config, error) {
 	return &config, nil
 }
 
-func writeConfig(config *Config) error {
+func getConfigPath() string {
+	// first try find locally config
+	if _, err := os.Stat(configName); !errors.Is(err, os.ErrNotExist) {
+		return configName
+	}
+	// create config in user config directory
+	// example for unix: $HOME/.config/pomotrack/.pomotrack-config.yaml
+	userCfgDir, osErr := os.UserConfigDir()
+	if osErr != nil {
+		return configName
+	}
+	pomotrackCfgDir := filepath.Join(userCfgDir, "pomotrack")
+	dirErr := os.MkdirAll(filepath.Join(userCfgDir, "pomotrack"), 0744)
+	if dirErr != nil {
+		log.Println("[WARN] can't create config directory:", dirErr)
+		return configName
+	}
+	return filepath.Join(pomotrackCfgDir, configName)
+}
+
+func writeConfig(config *Config, configPath string) error {
 	yamlData, err := yaml.Marshal(config)
 	if err != nil {
 		return fmt.Errorf("can't marshal yaml file: %w", err)
 	}
 
-	if err = os.WriteFile(configName, yamlData, 0600); err != nil {
+	if err = os.WriteFile(configPath, yamlData, 0600); err != nil {
 		return fmt.Errorf("can't update config file: %w", err)
 	}
 	return nil
