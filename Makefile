@@ -1,9 +1,9 @@
-APP_NAME = PomoTrack
+APP_NAME = pomotrack
 BUILD_DIR = build
 GO_FILES = $(shell find . -name '*.go')
 
-run:
-	@go run .
+run: build
+	./$(APP_NAME)
 
 test:
 	@go test ./...
@@ -17,7 +17,7 @@ fmt:
 
 # Сборка бинарного файла для текущей платформы
 build:
-	go build -o $(BUILD_DIR)/$(APP_NAME)
+	go build -o $(APP_NAME)
 
 # Кросс-компиляция для всех поддерживаемых платформ
 build-all:

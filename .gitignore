@@ -3,3 +3,4 @@ examples
 *.db
 *.log
 config/config.yaml
+pomotrack
