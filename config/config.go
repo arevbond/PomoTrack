@@ -94,24 +94,28 @@ func readConfig(configPath string) (*Config, error) {
 	return &config, nil
 }
 
+func GetConfigDir() string {
+	// create config in user config directory
+	// example for unix: $HOME/.config/pomotrack/
+	userCfgDir, err := os.UserConfigDir()
+	if err != nil {
+		return ""
+	}
+	pomotrackCfgDir := filepath.Join(userCfgDir, "pomotrack")
+	dirErr := os.MkdirAll(pomotrackCfgDir, 0744)
+	if dirErr != nil {
+		log.Println("[WARN] can't create config directory:", dirErr)
+		return ""
+	}
+	return pomotrackCfgDir
+}
+
 func getConfigPath() string {
 	// first try find locally config
 	if _, err := os.Stat(configName); !errors.Is(err, os.ErrNotExist) {
 		return configName
 	}
-	// create config in user config directory
-	// example for unix: $HOME/.config/pomotrack/.pomotrack-config.yaml
-	userCfgDir, osErr := os.UserConfigDir()
-	if osErr != nil {
-		return configName
-	}
-	pomotrackCfgDir := filepath.Join(userCfgDir, "pomotrack")
-	dirErr := os.MkdirAll(filepath.Join(userCfgDir, "pomotrack"), 0744)
-	if dirErr != nil {
-		log.Println("[WARN] can't create config directory:", dirErr)
-		return configName
-	}
-	return filepath.Join(pomotrackCfgDir, configName)
+	return filepath.Join(GetConfigDir(), configName)
 }
 
 func writeConfig(config *Config, configPath string) error {

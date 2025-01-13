@@ -16,7 +16,12 @@ type Application struct {
 }
 
 func NewApplication(logger *slog.Logger, cfg *config.Config) *Application {
-	database, err := NewStorage("database.db")
+	database, err := NewStorage(".pomotrack.UserSessions.db")
+	if err != nil {
+		panic(err)
+	}
+
+	err = database.Migrate()
 	if err != nil {
 		panic(err)
 	}
