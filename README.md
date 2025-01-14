@@ -4,8 +4,8 @@ PomoTrack — это CLI утилита для трекинга рабочих �
    
 ## Application options
 ```
-      --focuse-duration=       setup pomodoro focus intreval
-      --break-duration=        setup break interval 
+      --focuse-duration=       setup pomodoro focus intreval (default 25m)
+      --break-duration=        setup break interval (default 5m)
 ``` 
 Продолжительность можно указывать в минутах (`m`) или часах (`h`), например: `25m` или `1h`.
 

@@ -28,6 +28,7 @@ const (
 	defaultBreakDuration = 5 * time.Minute
 )
 
+// Init create application config.
 func Init() (*Config, error) {
 	var focusDurationFlag time.Duration
 	var breakDurationFlag time.Duration
@@ -76,7 +77,7 @@ func Init() (*Config, error) {
 func readConfig(configPath string) (*Config, error) {
 	var config Config
 
-	file, err := os.OpenFile(configPath, os.O_RDONLY|os.O_CREATE, 0644)
+	file, err := os.OpenFile(configPath, os.O_RDONLY|os.O_CREATE, 0o600)
 	if err != nil {
 		return nil, fmt.Errorf("can't open file: %w", err)
 	}
@@ -102,7 +103,7 @@ func GetConfigDir() string {
 		return ""
 	}
 	pomotrackCfgDir := filepath.Join(userCfgDir, "pomotrack")
-	dirErr := os.MkdirAll(pomotrackCfgDir, 0744)
+	dirErr := os.MkdirAll(pomotrackCfgDir, 0o750)
 	if dirErr != nil {
 		log.Println("[WARN] can't create config directory:", dirErr)
 		return ""
@@ -124,7 +125,7 @@ func writeConfig(config *Config, configPath string) error {
 		return fmt.Errorf("can't marshal yaml file: %w", err)
 	}
 
-	if err = os.WriteFile(configPath, yamlData, 0600); err != nil {
+	if err = os.WriteFile(configPath, yamlData, 0o600); err != nil {
 		return fmt.Errorf("can't update config file: %w", err)
 	}
 	return nil
