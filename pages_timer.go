@@ -70,6 +70,16 @@ func (m *UIManager) renderActivePage(pageName string, color, title string, timer
 			return 0, 0, 0, 0
 		})
 
+	hiddenTimerText := tview.NewTextView().
+		SetDynamicColors(true).
+		SetTextAlign(tview.AlignCenter).
+		SetDrawFunc(func(screen tcell.Screen, x, y, width, height int) (int, int, int, int) {
+			tview.Print(screen, fmt.Sprintf("[%s]%s[-]", color,
+				"focusing"),
+				x, y+height/4, width, tview.AlignCenter, tcell.ColorLime)
+			return 0, 0, 0, 0
+		})
+
 	pauseButton := tview.NewButton("Pause").SetSelectedFunc(func() {
 		m.stateManager.SetState(StatePaused, timerType)
 	})
@@ -84,7 +94,11 @@ func (m *UIManager) renderActivePage(pageName string, color, title string, timer
 		SetBorders(true)
 
 	grid.AddItem(breakText, 1, 1, 1, 2, 0, 0, false)
-	grid.AddItem(timerText, 2, 1, 1, 2, 0, 0, false)
+	if m.stateManager.IsFocusTimeHidden() && timerType == FocusTimer {
+		grid.AddItem(hiddenTimerText, 2, 1, 1, 2, 0, 0, false)
+	} else {
+		grid.AddItem(timerText, 2, 1, 1, 2, 0, 0, false)
+	}
 	grid.AddItem(pauseButton, 3, 1, 1, 1, 0, 0, true)
 	grid.AddItem(toggleButton, 3, 2, 1, 1, 0, 0, false)
 

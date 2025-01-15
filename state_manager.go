@@ -110,3 +110,7 @@ func (sm *StateManager) getTimer(timerType TimerType) *Timer {
 func (sm *StateManager) timeToFinish(timerType TimerType) time.Duration {
 	return sm.getTimer(timerType).timeToFinish
 }
+
+func (sm *StateManager) IsFocusTimeHidden() bool {
+	return sm.timerConfig.HiddenFocusTime
+}

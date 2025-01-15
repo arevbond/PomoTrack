@@ -20,7 +20,7 @@ func TestNewStateManager(t *testing.T) {
 	focusTimer, breakTimer := NewFocusTimer(focusDuration), NewBreakTimer(breakDuration)
 	stateChan := make(chan StateChangeEvent)
 	stateManager := NewStateManager(slog.Default(), focusTimer, breakTimer, stateChan,
-		config.TimerConfig{FocusDuration: focusDuration, BreakDuration: breakDuration})
+		config.TimerConfig{FocusDuration: focusDuration, BreakDuration: breakDuration, HiddenFocusTime: true})
 	require.Equal(t, StatePaused, stateManager.CurrentState())
 }
 
@@ -28,7 +28,7 @@ func TestStateManager_SetState(t *testing.T) {
 	focusTimer, breakTimer := NewFocusTimer(focusDuration), NewBreakTimer(breakDuration)
 	stateChan := make(chan StateChangeEvent)
 	stateManager := NewStateManager(slog.Default(), focusTimer, breakTimer, stateChan,
-		config.TimerConfig{FocusDuration: focusDuration, BreakDuration: breakDuration})
+		config.TimerConfig{FocusDuration: focusDuration, BreakDuration: breakDuration, HiddenFocusTime: true})
 
 	go func() {
 		event := <-stateChan
@@ -47,7 +47,7 @@ func TestStateManager_StartTimer(t *testing.T) {
 	focusTimer, breakTimer := NewFocusTimer(2*time.Second), NewBreakTimer(breakDuration)
 	stateChan := make(chan StateChangeEvent)
 	stateManager := NewStateManager(slog.Default(), focusTimer, breakTimer, stateChan,
-		config.TimerConfig{FocusDuration: focusDuration, BreakDuration: breakDuration})
+		config.TimerConfig{FocusDuration: focusDuration, BreakDuration: breakDuration, HiddenFocusTime: true})
 
 	stateManager.startTimer(focusTimer)
 	time.Sleep(3 * time.Second)
@@ -58,7 +58,7 @@ func TestStateManager_PauseTimer(t *testing.T) {
 	focusTimer, breakTimer := NewFocusTimer(10*time.Second), NewBreakTimer(breakDuration)
 	stateChan := make(chan StateChangeEvent)
 	stateManager := NewStateManager(slog.Default(), focusTimer, breakTimer, stateChan,
-		config.TimerConfig{FocusDuration: focusDuration, BreakDuration: breakDuration})
+		config.TimerConfig{FocusDuration: focusDuration, BreakDuration: breakDuration, HiddenFocusTime: true})
 
 	stateManager.focusTimer.Run()
 	time.Sleep(1 * time.Second)
@@ -72,7 +72,7 @@ func TestStateManager_FinishTimer(t *testing.T) {
 	focusTimer, breakTimer := NewFocusTimer(focusDuration), NewBreakTimer(breakDuration)
 	stateChan := make(chan StateChangeEvent)
 	stateManager := NewStateManager(slog.Default(), focusTimer, breakTimer, stateChan,
-		config.TimerConfig{FocusDuration: focusDuration, BreakDuration: breakDuration})
+		config.TimerConfig{FocusDuration: focusDuration, BreakDuration: breakDuration, HiddenFocusTime: true})
 
 	stateManager.focusTimer.Run()
 	time.Sleep(3 * time.Second)
