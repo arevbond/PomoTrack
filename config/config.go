@@ -18,8 +18,15 @@ type Config struct {
 }
 
 type TimerConfig struct {
-	FocusDuration time.Duration `yaml:"focus_duration"`
-	BreakDuration time.Duration `yaml:"break_duration"`
+	FocusDuration   time.Duration `yaml:"focus_duration"`
+	BreakDuration   time.Duration `yaml:"break_duration"`
+	HiddenFocusTime bool          `yaml:"hidden_focus_time"`
+}
+
+type flags struct {
+	FocusDuration   time.Duration `yaml:"focus_duration"`
+	BreakDuration   time.Duration `yaml:"break_duration"`
+	HiddenFocusTime bool          `yaml:"hidden_focus_time"`
 }
 
 const (
@@ -28,15 +35,20 @@ const (
 	defaultBreakDuration = 5 * time.Minute
 )
 
+func parseFlags() flags {
+	var f flags
+
+	flag.DurationVar(&f.FocusDuration, "focus-duration", 0, "edit focus timer duration")
+	flag.DurationVar(&f.BreakDuration, "break-duration", 0, "edit break timer duration")
+	flag.BoolVar(&f.HiddenFocusTime, "hidden-focus-time", false, "show or hide clock on focus page")
+	flag.Parse()
+
+	return f
+}
+
 // Init create application config.
 func Init() (*Config, error) {
-	var focusDurationFlag time.Duration
-	var breakDurationFlag time.Duration
-
-	flag.DurationVar(&focusDurationFlag, "focus-duration", 0, "edit focus timer duration")
-	flag.DurationVar(&breakDurationFlag, "break-duration", 0, "edit break timer duration")
-
-	flag.Parse()
+	f := parseFlags()
 
 	configPath := getConfigPath()
 	config, err := readConfig(configPath)
@@ -44,31 +56,19 @@ func Init() (*Config, error) {
 		return nil, fmt.Errorf("can't read config: %w", err)
 	}
 
-	if focusDurationFlag > 0 || breakDurationFlag > 0 {
-		if focusDurationFlag > 0 {
-			config.Timer.FocusDuration = focusDurationFlag
-		}
-		if breakDurationFlag > 0 {
-			config.Timer.BreakDuration = breakDurationFlag
-		}
-
-		if err = writeConfig(config, configPath); err != nil {
-			return nil, fmt.Errorf("can't write config: %w", err)
+	changed := applyFlagsToConfig(f, config)
+	if changed {
+		err = writeConfig(config, configPath)
+		if err != nil {
+			return nil, fmt.Errorf("can't save config to file: %w", err)
 		}
 	}
 
-	if config.Timer.FocusDuration == 0 || config.Timer.BreakDuration == 0 {
-		if config.Timer.FocusDuration == 0 {
-			config.Timer.FocusDuration = defaultFocusDuration
-		}
-
-		if config.Timer.BreakDuration == 0 {
-			config.Timer.BreakDuration = defaultBreakDuration
-		}
-
-		if err = writeConfig(config, configPath); err != nil {
-			return nil, fmt.Errorf("can't write config: %w", err)
-		}
+	if config.Timer.FocusDuration == 0 {
+		config.Timer.FocusDuration = defaultFocusDuration
+	}
+	if config.Timer.BreakDuration == 0 {
+		config.Timer.BreakDuration = defaultBreakDuration
 	}
 
 	return config, nil
@@ -129,4 +129,34 @@ func writeConfig(config *Config, configPath string) error {
 		return fmt.Errorf("can't update config file: %w", err)
 	}
 	return nil
+}
+
+func applyFlagsToConfig(f flags, c *Config) bool {
+	var changed bool
+
+	if f.FocusDuration > 0 && f.FocusDuration != c.Timer.FocusDuration {
+		c.Timer.FocusDuration = f.FocusDuration
+		changed = true
+	}
+
+	if f.BreakDuration > 0 && f.BreakDuration != c.Timer.BreakDuration {
+		c.Timer.BreakDuration = f.BreakDuration
+		changed = true
+	}
+
+	if isFlagPassed("hidden-focus-time") && f.HiddenFocusTime != c.Timer.HiddenFocusTime {
+		c.Timer.HiddenFocusTime = f.HiddenFocusTime
+		changed = true
+	}
+	return changed
+}
+
+func isFlagPassed(name string) bool {
+	passed := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			passed = true
+		}
+	})
+	return passed
 }
