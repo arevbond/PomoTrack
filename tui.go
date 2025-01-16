@@ -13,16 +13,16 @@ import (
 
 const screenRefreshInterval = 1 * time.Second
 
-type taskTracker interface {
-	HandleTaskStateChanges()
-	TodayTasks() ([]*Task, error)
-	Tasks() ([]*Task, error)
-	RemoveTask(id int) error
-	CreateNewTask(startAt time.Time, finishAt time.Time, duration int) (*Task, error)
-	Hours(tasks []*Task) float64
-	CountDays(tasks []*Task) int
-	HoursInWeek(tasks []*Task) [7]int
-	FinishRunningTask()
+type pomodoroTracker interface {
+	HandlePomodoroStateChanges()
+	TodayPomodoros() ([]*Pomodoro, error)
+	Pomodoros() ([]*Pomodoro, error)
+	RemovePomodoro(id int) error
+	CreateNewPomodoro(startAt time.Time, finishAt time.Time, duration int) (*Pomodoro, error)
+	Hours([]*Pomodoro) float64
+	CountDays([]*Pomodoro) int
+	HoursInWeek([]*Pomodoro) [7]int
+	FinishRunningPomodoro()
 }
 
 type UIManager struct {
@@ -30,35 +30,35 @@ type UIManager struct {
 	pages        *tview.Pages
 	logger       *slog.Logger
 	stateManager *StateManager
-	stateUpdates chan StateChangeEvent
+	stateUpdates chan StateEvent
 
-	taskTracker      taskTracker
-	stateTaskUpdates chan StateChangeEvent
+	pomodoroTracker      pomodoroTracker
+	statePomodoroUpdates chan StateEvent
 
 	allowedTransitions map[string][]string
 	keyPageMapping     map[tcell.Key]string
 }
 
-type StateChangeEvent struct {
+type StateEvent struct {
 	TimerType TimerType
 	NewState  TimerState
 }
 
-func NewUIManager(logger *slog.Logger, cfg *config.Config, events chan StateChangeEvent, tm taskTracker) *UIManager {
-	stateChangeChan := make(chan StateChangeEvent)
+func NewUIManager(logger *slog.Logger, cfg *config.Config, events chan StateEvent, tm pomodoroTracker) *UIManager {
+	stateChangeChan := make(chan StateEvent)
 	focusTimer := NewFocusTimer(cfg.Timer.FocusDuration)
 	breakTimer := NewBreakTimer(cfg.Timer.BreakDuration)
 
 	return &UIManager{
-		ui:                 tview.NewApplication(),
-		pages:              tview.NewPages(),
-		logger:             logger,
-		stateManager:       NewStateManager(logger, focusTimer, breakTimer, stateChangeChan, cfg.Timer),
-		stateUpdates:       stateChangeChan,
-		taskTracker:        tm,
-		stateTaskUpdates:   events,
-		allowedTransitions: constructAllowedTransitions(),
-		keyPageMapping:     constructKeyPageMap(),
+		ui:                   tview.NewApplication(),
+		pages:                tview.NewPages(),
+		logger:               logger,
+		stateManager:         NewStateManager(logger, focusTimer, breakTimer, stateChangeChan, cfg.Timer),
+		stateUpdates:         stateChangeChan,
+		pomodoroTracker:      tm,
+		statePomodoroUpdates: events,
+		allowedTransitions:   constructAllowedTransitions(),
+		keyPageMapping:       constructKeyPageMap(),
 	}
 }
 
@@ -110,7 +110,7 @@ func (m *UIManager) canSwitchTo(targetPage string) bool {
 
 func (m *UIManager) keyboardEvents(event *tcell.EventKey) *tcell.EventKey {
 	if event.Key() == tcell.KeyCtrlC {
-		m.taskTracker.FinishRunningTask()
+		m.pomodoroTracker.FinishRunningPomodoro()
 		m.ui.Stop()
 	}
 
@@ -133,32 +133,32 @@ func (m *UIManager) keyboardEvents(event *tcell.EventKey) *tcell.EventKey {
 }
 
 func (m *UIManager) switchToDetailStats(pageName string) {
-	tasks, err := m.taskTracker.TodayTasks()
+	pomodoros, err := m.pomodoroTracker.TodayPomodoros()
 	if err != nil {
-		m.logger.Error("can't get today tasks", slog.Any("error", err))
+		m.logger.Error("can't get today pomodoros", slog.Any("error", err))
 		return
 	}
-	if len(tasks) > statisticsPageSize {
-		m.renderInsertStatsPage(0, statisticsPageSize, tasks)
-		m.renderDetailStatsPage(0, statisticsPageSize, tasks)
+	if len(pomodoros) > statisticsPageSize {
+		m.renderInsertStatsPage(0, statisticsPageSize, pomodoros)
+		m.renderDetailStatsPage(0, statisticsPageSize, pomodoros)
 	} else {
-		m.renderInsertStatsPage(0, len(tasks), tasks)
-		m.renderDetailStatsPage(0, len(tasks), tasks)
+		m.renderInsertStatsPage(0, len(pomodoros), pomodoros)
+		m.renderDetailStatsPage(0, len(pomodoros), pomodoros)
 	}
 	m.pages.SwitchToPage(pageName)
 }
 
 func (m *UIManager) switchToSummaryStats() {
-	tasks, err := m.taskTracker.Tasks()
+	pomodoros, err := m.pomodoroTracker.Pomodoros()
 	if err != nil {
-		m.logger.Error("can't get all tasks", slog.Any("error", err))
+		m.logger.Error("can't get all pomodoros", slog.Any("error", err))
 		return
 	}
 
 	m.renderSummaryStatsPage(
-		m.taskTracker.Hours(tasks),
-		m.taskTracker.CountDays(tasks),
-		m.taskTracker.HoursInWeek(tasks),
+		m.pomodoroTracker.Hours(pomodoros),
+		m.pomodoroTracker.CountDays(pomodoros),
+		m.pomodoroTracker.HoursInWeek(pomodoros),
 	)
 
 	m.pages.SwitchToPage(summaryStatsPage)
@@ -172,7 +172,7 @@ func (m *UIManager) InitStateAndKeyboardHandling() {
 
 func (m *UIManager) listenToStateChanges(stopRefreshing chan struct{}) {
 	for event := range m.stateUpdates {
-		m.stateTaskUpdates <- event
+		m.statePomodoroUpdates <- event
 
 		switch event.NewState {
 		case StateActive:

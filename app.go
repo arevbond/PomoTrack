@@ -26,17 +26,17 @@ func NewApplication(logger *slog.Logger, cfg *config.Config) *Application {
 		panic(err)
 	}
 
-	stateTaskChan := make(chan StateChangeEvent)
+	stateEvents := make(chan StateEvent)
 
 	app := &Application{
 		logger:    logger,
-		uiManager: NewUIManager(logger, cfg, stateTaskChan, NewTaskManager(logger, database, stateTaskChan)),
+		uiManager: NewUIManager(logger, cfg, stateEvents, NewPomodoroManager(logger, database, stateEvents)),
 	}
 
 	app.uiManager.DefaultTimerPages()
 
 	go app.uiManager.InitStateAndKeyboardHandling()
-	go app.uiManager.taskTracker.HandleTaskStateChanges()
+	go app.uiManager.pomodoroTracker.HandlePomodoroStateChanges()
 
 	return app
 }

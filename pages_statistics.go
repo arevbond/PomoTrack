@@ -20,14 +20,14 @@ const (
 
 const statisticsPageSize = 6
 
-func (m *UIManager) renderDetailStatsPage(start, end int, tasks []*Task) {
-	table := m.newStatsTable(start, end, tasks)
+func (m *UIManager) renderDetailStatsPage(start, end int, pomodoros []*Pomodoro) {
+	table := m.newStatsTable(start, end, pomodoros)
 
-	buttons := m.newStatsButtons(start, end, tasks)
+	buttons := m.newStatsButtons(start, end, pomodoros)
 
 	text := tview.NewTextView().
 		SetTextAlign(tview.AlignCenter).
-		SetText(fmt.Sprintf("Total: %s", m.totalDuration(tasks))).
+		SetText(fmt.Sprintf("Total: %s", m.totalDuration(pomodoros))).
 		SetDynamicColors(true)
 
 	hotKeysPanel := constructBottomPanel(insertStatsPage)
@@ -92,23 +92,23 @@ func buttonIndex(targetButton tview.Primitive, buttons []*tview.Button) int {
 	return -1
 }
 
-func (m *UIManager) newStatsButtons(start, end int, tasks []*Task) []*tview.Button {
+func (m *UIManager) newStatsButtons(start, end int, pomodoros []*Pomodoro) []*tview.Button {
 	buttons := make([]*tview.Button, 0)
 
 	if start >= statisticsPageSize {
 		prevButton := tview.NewButton("Prev").SetSelectedFunc(func() {
-			m.renderDetailStatsPage(start-statisticsPageSize, start, tasks)
+			m.renderDetailStatsPage(start-statisticsPageSize, start, pomodoros)
 			m.pages.SwitchToPage(detailStatsPage)
 		})
 
 		buttons = append(buttons, prevButton)
 	}
-	if end < len(tasks) {
+	if end < len(pomodoros) {
 		nextButton := tview.NewButton("Next").SetSelectedFunc(func() {
-			if end+5 < len(tasks) {
-				m.renderDetailStatsPage(end, end+statisticsPageSize, tasks)
+			if end+5 < len(pomodoros) {
+				m.renderDetailStatsPage(end, end+statisticsPageSize, pomodoros)
 			} else {
-				m.renderDetailStatsPage(end, len(tasks), tasks)
+				m.renderDetailStatsPage(end, len(pomodoros), pomodoros)
 			}
 			m.pages.SwitchToPage(detailStatsPage)
 		})
@@ -119,7 +119,7 @@ func (m *UIManager) newStatsButtons(start, end int, tasks []*Task) []*tview.Butt
 	return buttons
 }
 
-func (m *UIManager) newStatsTable(start, end int, tasks []*Task) *tview.Table {
+func (m *UIManager) newStatsTable(start, end int, pomodoros []*Pomodoro) *tview.Table {
 	table := tview.NewTable().SetBorders(true)
 	headers := []string{"Date", "Time", "Minutes", "Action"}
 
@@ -127,26 +127,26 @@ func (m *UIManager) newStatsTable(start, end int, tasks []*Task) *tview.Table {
 		table.SetCell(0, col, tview.NewTableCell(header).SetAlign(tview.AlignCenter))
 	}
 
-	for i, task := range tasks[start:end] {
+	for i, pmdr := range pomodoros[start:end] {
 		row := i + 1
 
-		dateStr := task.StartAt.Format("02-Jan-2006")
+		dateStr := pmdr.StartAt.Format("02-Jan-2006")
 		const timeFormat = "15:04"
-		timeStr := fmt.Sprintf("%s-%s", task.StartAt.Format(timeFormat), task.FinishAt.Format(timeFormat))
+		timeStr := fmt.Sprintf("%s-%s", pmdr.StartAt.Format(timeFormat), pmdr.FinishAt.Format(timeFormat))
 
 		table.SetCell(row, 0, tview.NewTableCell(dateStr).SetAlign(tview.AlignCenter))
 		table.SetCell(row, 1, tview.NewTableCell(timeStr).SetAlign(tview.AlignCenter))
-		table.SetCell(row, 2, tview.NewTableCell(strconv.Itoa(task.SecondsDuration/60)).SetAlign(tview.AlignCenter))
+		table.SetCell(row, 2, tview.NewTableCell(strconv.Itoa(pmdr.SecondsDuration/60)).SetAlign(tview.AlignCenter))
 		table.SetCell(row, 3, tview.NewTableCell("[red] Delete [-]").SetAlign(tview.AlignCenter).SetSelectable(true))
 	}
 
-	table.SetInputCapture(m.captureTableInput(table, tasks))
+	table.SetInputCapture(m.captureTableInput(table, pomodoros))
 	return table
 }
 
-func (m *UIManager) captureTableInput(table *tview.Table, tasks []*Task) func(*tcell.EventKey) *tcell.EventKey {
-	handleEnterKey := func(table *tview.Table, tasks []*Task, col int) {
-		if len(tasks) > 0 && col != 3 {
+func (m *UIManager) captureTableInput(table *tview.Table, pomdoro []*Pomodoro) func(*tcell.EventKey) *tcell.EventKey {
+	handleEnterKey := func(table *tview.Table, pomodoro []*Pomodoro, col int) {
+		if len(pomodoro) > 0 && col != 3 {
 			table.Select(1, 3).SetSelectable(true, true)
 		} else if col == 3 {
 			table.Select(0, 0).SetSelectable(false, false)
@@ -157,7 +157,7 @@ func (m *UIManager) captureTableInput(table *tview.Table, tasks []*Task) func(*t
 		row, col := table.GetSelection()
 		switch event.Key() {
 		case tcell.KeyEnter:
-			handleEnterKey(table, tasks, col)
+			handleEnterKey(table, pomdoro, col)
 		case tcell.KeyDown, tcell.KeyUp:
 			m.handleVerticalNavigation(table, row, col, event.Key())
 		case tcell.KeyLeft, tcell.KeyRight:
@@ -166,7 +166,7 @@ func (m *UIManager) captureTableInput(table *tview.Table, tasks []*Task) func(*t
 			}
 		case tcell.KeyCtrlY:
 			if col == 3 && row > 0 {
-				m.removeTask(tasks, row-1)
+				m.removePomodoro(pomdoro, row-1)
 			}
 		case tcell.KeyEscape:
 			table.Select(0, 0).SetSelectable(false, false)
@@ -196,38 +196,38 @@ func (m *UIManager) handleVerticalNavigation(table *tview.Table, row, col int, k
 	}
 }
 
-func (m *UIManager) removeTask(tasks []*Task, taskIndex int) {
-	err := m.taskTracker.RemoveTask(tasks[taskIndex].ID)
+func (m *UIManager) removePomodoro(pomodoros []*Pomodoro, pomodoroIndx int) {
+	err := m.pomodoroTracker.RemovePomodoro(pomodoros[pomodoroIndx].ID)
 	if err != nil {
-		m.logger.Error("Can't delete task", slog.Any("id", tasks[taskIndex].ID))
+		m.logger.Error("Can't delete pomodoro", slog.Any("id", pomodoros[pomodoroIndx].ID))
 	}
 
-	tasks = append(tasks[:taskIndex], tasks[taskIndex+1:]...)
-	if len(tasks) > 5 {
-		m.renderDetailStatsPage(0, statisticsPageSize, tasks)
+	pomodoros = append(pomodoros[:pomodoroIndx], pomodoros[pomodoroIndx+1:]...)
+	if len(pomodoros) > 5 {
+		m.renderDetailStatsPage(0, statisticsPageSize, pomodoros)
 	} else {
-		m.renderDetailStatsPage(0, len(tasks), tasks)
+		m.renderDetailStatsPage(0, len(pomodoros), pomodoros)
 	}
 	m.pages.SwitchToPage(detailStatsPage)
 }
 
-func (m *UIManager) totalDuration(tasks []*Task) string {
+func (m *UIManager) totalDuration(pomodoros []*Pomodoro) string {
 	var total int
-	for _, t := range tasks {
+	for _, t := range pomodoros {
 		total += t.SecondsDuration
 	}
 	res := time.Duration(total) * time.Second
 	return res.String()
 }
 
-func (m *UIManager) renderInsertStatsPage(start, end int, tasks []*Task) {
-	table := m.newStatsTable(start, end, tasks)
+func (m *UIManager) renderInsertStatsPage(start, end int, pomodoros []*Pomodoro) {
+	table := m.newStatsTable(start, end, pomodoros)
 
-	buttons := m.newStatsButtons(start, end, tasks)
+	buttons := m.newStatsButtons(start, end, pomodoros)
 
 	text := tview.NewTextView().
 		SetTextAlign(tview.AlignCenter).
-		SetText(fmt.Sprintf("Total: %s", m.totalDuration(tasks))).
+		SetText(fmt.Sprintf("Total: %s", m.totalDuration(pomodoros))).
 		SetDynamicColors(true)
 
 	form := tview.NewForm().
@@ -235,7 +235,7 @@ func (m *UIManager) renderInsertStatsPage(start, end int, tasks []*Task) {
 		AddInputField("Time start", time.Now().Format("15:04"), 7, checkTimeInInput(), nil).
 		AddInputField("Minutes", "0", 5, tview.InputFieldInteger, nil)
 
-	form.AddButton("Save", m.saveTask(form))
+	form.AddButton("Save", m.savePomodoro(form))
 
 	grid := tview.NewGrid().
 		SetRows(1, 3, 0, 1, 1).
@@ -275,7 +275,7 @@ func checkTimeInInput() func(textToCheck string, lastChar rune) bool {
 	}
 }
 
-func (m *UIManager) saveTask(form *tview.Form) func() {
+func (m *UIManager) savePomodoro(form *tview.Form) func() {
 	return func() {
 		timeStartStr := form.GetFormItem(0).(*tview.InputField).GetText() //nolint:errcheck // simple parsing
 		minutesStr := form.GetFormItem(1).(*tview.InputField).GetText()   //nolint:errcheck // simple parsing
@@ -292,9 +292,9 @@ func (m *UIManager) saveTask(form *tview.Form) func() {
 		}
 		dateStart := timeStart.AddDate(time.Now().Year(), int(time.Now().Month())-1, time.Now().Day()-1)
 
-		err = m.saveTaskFromForm(dateStart, minutes)
+		err = m.savePomodoroFromForm(dateStart, minutes)
 		if err != nil {
-			m.logger.Error("can't create task", slog.Any("error", err))
+			m.logger.Error("can't create pomodoro", slog.Any("error", err))
 			m.switchToDetailStats(insertStatsPage)
 			return
 		}
@@ -302,9 +302,9 @@ func (m *UIManager) saveTask(form *tview.Form) func() {
 	}
 }
 
-func (m *UIManager) saveTaskFromForm(timeStart time.Time, minutes int) error {
+func (m *UIManager) savePomodoroFromForm(timeStart time.Time, minutes int) error {
 	finishTime := timeStart.Add(time.Duration(minutes) * time.Minute)
-	_, err := m.taskTracker.CreateNewTask(timeStart, finishTime, minutes*60)
+	_, err := m.pomodoroTracker.CreateNewPomodoro(timeStart, finishTime, minutes*60)
 	return err
 }
 

@@ -19,13 +19,13 @@ type StateManager struct {
 	currentState TimerState
 	focusTimer   *Timer
 	breakTimer   *Timer
-	stateChan    chan StateChangeEvent
+	stateChan    chan StateEvent
 	logger       *slog.Logger
 	timerConfig  config.TimerConfig
 }
 
 func NewStateManager(l *slog.Logger, focusT *Timer, breakT *Timer,
-	stateChan chan StateChangeEvent, cfg config.TimerConfig) *StateManager {
+	stateChan chan StateEvent, cfg config.TimerConfig) *StateManager {
 	return &StateManager{
 		logger:       l,
 		currentState: StatePaused,
@@ -47,7 +47,7 @@ func (sm *StateManager) SetState(state TimerState, timerType TimerType) {
 
 	sm.currentState = state
 
-	event := StateChangeEvent{
+	event := StateEvent{
 		TimerType: timerType,
 		NewState:  state,
 	}

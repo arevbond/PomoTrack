@@ -53,113 +53,113 @@ func setup() error {
 	return nil
 }
 
-func TestStorage_CreateTask(t *testing.T) {
-	task := &Task{
+func TestStorage_CreatePomodoro(t *testing.T) {
+	pomodoro := &Pomodoro{
 		ID:       100,
 		StartAt:  time.Now(),
 		FinishAt: time.Now(),
 	}
-	err := s.CreateTask(task)
+	err := s.CreatePomodoro(pomodoro)
 	require.NoError(t, err)
 
-	var taskFromDB Task
-	err = s.DB.QueryRow(`SELECT * FROM tasks;`).Scan(&taskFromDB.ID, &taskFromDB.StartAt,
-		&taskFromDB.FinishAt, &taskFromDB.SecondsDuration)
+	var pomdoroFromDB Pomodoro
+	err = s.DB.QueryRow(`SELECT * FROM pomodoros;`).Scan(&pomdoroFromDB.ID, &pomdoroFromDB.StartAt,
+		&pomdoroFromDB.FinishAt, &pomdoroFromDB.SecondsDuration)
 	require.NoError(t, err)
 
-	require.Equal(t, task.ID, taskFromDB.ID)
-	require.WithinDuration(t, task.StartAt, taskFromDB.StartAt, time.Second)
-	require.WithinDuration(t, task.FinishAt, taskFromDB.FinishAt, time.Second)
-	require.Equal(t, task.SecondsDuration, taskFromDB.SecondsDuration)
+	require.Equal(t, pomodoro.ID, pomdoroFromDB.ID)
+	require.WithinDuration(t, pomodoro.StartAt, pomdoroFromDB.StartAt, time.Second)
+	require.WithinDuration(t, pomodoro.FinishAt, pomdoroFromDB.FinishAt, time.Second)
+	require.Equal(t, pomodoro.SecondsDuration, pomdoroFromDB.SecondsDuration)
 
 	clearTable()
 }
 
-func TestStorage_UpdateTask(t *testing.T) {
-	task := &Task{
+func TestStorage_UpdatePomodoro(t *testing.T) {
+	pomodoro := &Pomodoro{
 		ID:       100,
 		StartAt:  time.Now(),
 		FinishAt: time.Now(),
 	}
-	err := s.CreateTask(task)
+	err := s.CreatePomodoro(pomodoro)
 	require.NoError(t, err)
 
-	task.FinishAt = time.Now().Add(60 * time.Second)
-	task.SecondsDuration = 60
+	pomodoro.FinishAt = time.Now().Add(60 * time.Second)
+	pomodoro.SecondsDuration = 60
 
-	err = s.UpdateTask(task)
+	err = s.UpdatePomodoro(pomodoro)
 	require.NoError(t, err)
 
-	var taskFromDB Task
-	err = s.DB.QueryRow(`SELECT * FROM tasks;`).Scan(&taskFromDB.ID, &taskFromDB.StartAt,
-		&taskFromDB.FinishAt, &taskFromDB.SecondsDuration)
+	var pomodoroFromDB Pomodoro
+	err = s.DB.QueryRow(`SELECT * FROM pomodoros;`).Scan(&pomodoroFromDB.ID, &pomodoroFromDB.StartAt,
+		&pomodoroFromDB.FinishAt, &pomodoroFromDB.SecondsDuration)
 	require.NoError(t, err)
 
-	require.Equal(t, task.ID, taskFromDB.ID)
-	require.WithinDuration(t, task.StartAt, taskFromDB.StartAt, time.Second)
-	require.WithinDuration(t, task.FinishAt, taskFromDB.FinishAt, time.Second)
-	require.Equal(t, task.SecondsDuration, taskFromDB.SecondsDuration)
+	require.Equal(t, pomodoro.ID, pomodoroFromDB.ID)
+	require.WithinDuration(t, pomodoro.StartAt, pomodoroFromDB.StartAt, time.Second)
+	require.WithinDuration(t, pomodoro.FinishAt, pomodoroFromDB.FinishAt, time.Second)
+	require.Equal(t, pomodoro.SecondsDuration, pomodoroFromDB.SecondsDuration)
 
 	clearTable()
 }
 
-func TestStorage_FetchTasks(t *testing.T) {
+func TestStorage_FetchPomodoros(t *testing.T) {
 	const n = 100
 
 	for i := range n {
-		task := &Task{
+		pomodoro := &Pomodoro{
 			ID:      i,
 			StartAt: time.Now(),
 		}
-		err := s.CreateTask(task)
+		err := s.CreatePomodoro(pomodoro)
 		require.NoError(t, err)
 	}
 
-	tasks, err := s.fetchTasks(`SELECT * FROM tasks;`)
+	pomodoros, err := s.fetchPomodoros(`SELECT * FROM pomodoros;`)
 	require.NoError(t, err)
 
-	require.Len(t, tasks, n)
+	require.Len(t, pomodoros, n)
 
 	clearTable()
 }
 
-func TestStorage_GetTasks(t *testing.T) {
+func TestStorage_GetPomodoros(t *testing.T) {
 	const n = 100
 
 	for i := range n {
-		task := &Task{
+		pomodoro := &Pomodoro{
 			ID:      i,
 			StartAt: time.Now(),
 		}
-		err := s.CreateTask(task)
+		err := s.CreatePomodoro(pomodoro)
 		require.NoError(t, err)
 	}
 
 	const expectedLen = 100
-	tasks, err := s.GetTasks()
+	pomodoros, err := s.GetPomodoros()
 	require.NoError(t, err)
-	require.Len(t, tasks, expectedLen)
+	require.Len(t, pomodoros, expectedLen)
 
 	clearTable()
 }
 
-func TestStorage_GetTodayTasks(t *testing.T) {
+func TestStorage_GetTodayPomodoros(t *testing.T) {
 	const n = 100
 
 	for i := range n {
-		task := &Task{
+		pomodoro := &Pomodoro{
 			ID:      i,
 			StartAt: randomTimestamp(),
 		}
-		err := s.CreateTask(task)
+		err := s.CreatePomodoro(pomodoro)
 		require.NoError(t, err)
 	}
 
-	tasks, err := s.GetTodayTasks()
+	pomodoros, err := s.GetTodayPomodoros()
 	require.NoError(t, err)
 
-	for _, task := range tasks {
-		assert.Equal(t, time.Now().Day(), task.StartAt.Day())
+	for _, pomodoro := range pomodoros {
+		assert.Equal(t, time.Now().Day(), pomodoro.StartAt.Day())
 	}
 
 	clearTable()
@@ -179,5 +179,5 @@ func randomTimestamp() time.Time {
 }
 
 func clearTable() {
-	s.DB.Exec(`DELETE FROM tasks;`)
+	s.DB.Exec(`DELETE FROM pomodoros;`)
 }
