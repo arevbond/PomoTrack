@@ -118,3 +118,64 @@ func (s *Storage) fetchPomodoros(query string, args ...any) ([]*Pomodoro, error)
 	}
 	return pomodoros, nil
 }
+
+func (s *Storage) Tasks() ([]*Task, error) {
+	query := `SELECT id, name, pomodoros_required, pomodoros_completed,
+						is_complete, is_active, created_at
+			  FROM tasks
+			  ORDER BY created_at;`
+	rows, err := s.DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("can't get tasks: %w", err)
+	}
+	defer rows.Close()
+
+	var tasks []*Task
+
+	for rows.Next() {
+		var task Task
+
+		err = rows.Scan(&task.ID, &task.Name, &task.PomodorosRequired, &task.PomodorosCompleted,
+			&task.IsComplete, &task.IsActive, &task.CreateAt)
+		if err != nil {
+			return nil, fmt.Errorf("can't scan task: %w", err)
+		}
+		tasks = append(tasks, &task)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+func (s *Storage) CreateTask(task *Task) error {
+	query := `INSERT INTO tasks (name, pomodoros_required, pomodoros_completed, is_complete, is_active) 
+				VALUES (?, ?, ?, ?, ?)
+				RETURNING id`
+	args := []any{task.Name, task.PomodorosRequired, task.PomodorosCompleted, task.IsComplete, task.IsActive}
+
+	err := s.DB.QueryRow(query, args...).Scan(&task.ID)
+	if err != nil {
+		s.logger.Error("can't create task",
+			slog.String("name", task.Name),
+			slog.Int("pomodoro_required", task.PomodorosRequired),
+			slog.Int("pomodoro_completed", task.PomodorosCompleted),
+			slog.Bool("is_complete", task.IsComplete),
+			slog.Bool("is_active", task.IsActive))
+
+		return fmt.Errorf("can't create task: %w", err)
+	}
+	return nil
+}
+
+func (s *Storage) DeleteTask(id int) error {
+	query := `DELETE FROM tasks WHERE id = ?`
+	_, err := s.DB.Exec(query, id)
+	if err != nil {
+		s.logger.Error("can't delete task", slog.Int("id", id))
+		return fmt.Errorf("can't delete task: %w", err)
+	}
+	return nil
+}

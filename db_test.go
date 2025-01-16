@@ -1,26 +1,24 @@
-//nolint:govet,exhaustruct,gochecknoglobals,errcheck // still immature code, work in progress
+//nolint:exhaustruct,gochecknoglobals,errcheck // still immature code, work in progress
 package main
 
 import (
-	"embed"
+	"fmt"
 	"log"
+	"log/slog"
 	"math/rand"
 	"os"
+	"sort"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/pressly/goose/v3"
 	"github.com/stretchr/testify/require"
 )
 
 const testDBName = ":memory:"
 
 var s *Storage
-
-//go:embed migrations/*.sql
-var embedMigrations embed.FS
 
 func TestMain(m *testing.M) {
 	err := setup()
@@ -35,21 +33,15 @@ func TestMain(m *testing.M) {
 
 func setup() error {
 	var err error
-	s, err = NewStorage(testDBName)
+	s, err = NewStorage(testDBName, slog.Default())
 	if err != nil {
 		return err
 	}
 
-	goose.SetBaseFS(embedMigrations)
-
-	if err := goose.SetDialect("sqlite"); err != nil {
-		panic(err)
+	err = s.Migrate()
+	if err != nil {
+		return fmt.Errorf("can't make migrations: %w", err)
 	}
-
-	if err := goose.Up(s.DB, "migrations"); err != nil {
-		panic(err)
-	}
-
 	return nil
 }
 
@@ -165,6 +157,186 @@ func TestStorage_GetTodayPomodoros(t *testing.T) {
 	clearTable()
 }
 
+func TestStorage_CreateTask(t *testing.T) {
+	expectedTasks := []*Task{
+		{
+			ID:                 100,
+			Name:               "1",
+			PomodorosRequired:  5,
+			PomodorosCompleted: 0,
+			IsActive:           false,
+			IsComplete:         false,
+			CreateAt:           time.Now(),
+		},
+		{
+			ID:                 100,
+			Name:               "2",
+			PomodorosRequired:  5,
+			PomodorosCompleted: 0,
+			IsActive:           false,
+			IsComplete:         false,
+			CreateAt:           time.Now(),
+		},
+		{
+			ID:                 100,
+			Name:               "3",
+			PomodorosRequired:  5,
+			PomodorosCompleted: 0,
+			IsActive:           false,
+			IsComplete:         false,
+			CreateAt:           time.Now(),
+		},
+		{
+			ID:                 100,
+			Name:               "3",
+			PomodorosRequired:  5,
+			PomodorosCompleted: 0,
+			IsActive:           false,
+			IsComplete:         false,
+			CreateAt:           time.Now(),
+		},
+		{
+			ID:                 100,
+			Name:               "4",
+			PomodorosRequired:  5,
+			PomodorosCompleted: 0,
+			IsActive:           false,
+			IsComplete:         false,
+			CreateAt:           time.Now(),
+		},
+		{
+			ID:                 100,
+			Name:               "5",
+			PomodorosRequired:  5,
+			PomodorosCompleted: 0,
+			IsActive:           false,
+			IsComplete:         false,
+			CreateAt:           time.Now(),
+		},
+	}
+
+	for _, task := range expectedTasks {
+		err := s.CreateTask(task)
+		require.NoError(t, err)
+
+		require.NotEqualf(t, 100, task.ID, "autoincrement not working")
+	}
+
+	rows, err := s.DB.Query(`SELECT * FROM tasks;`)
+	require.NoError(t, err)
+	defer rows.Close()
+
+	var taskInDB []*Task
+	for rows.Next() {
+		var task Task
+
+		err = rows.Scan(&task.ID, &task.Name, &task.PomodorosRequired, &task.PomodorosCompleted,
+			&task.IsComplete, &task.IsActive, &task.CreateAt)
+		require.NoError(t, err)
+		taskInDB = append(taskInDB, &task)
+	}
+	require.NoError(t, rows.Err())
+
+	sort.Slice(taskInDB, func(i, j int) bool {
+		return taskInDB[i].Name < taskInDB[j].Name
+	})
+
+	assert.Equal(t, len(expectedTasks), len(taskInDB))
+
+	for i := range taskInDB {
+		assert.Equal(t, expectedTasks[i].ID, taskInDB[i].ID)
+		assert.Equal(t, expectedTasks[i].Name, taskInDB[i].Name)
+		assert.Equal(t, expectedTasks[i].PomodorosRequired, taskInDB[i].PomodorosRequired)
+		assert.Equal(t, expectedTasks[i].PomodorosCompleted, taskInDB[i].PomodorosCompleted)
+	}
+
+	clearTable()
+}
+
+func TestStorage_Tasks(t *testing.T) {
+	expectedTasks := []*Task{
+		{
+			ID:                 100,
+			Name:               "1",
+			PomodorosRequired:  5,
+			PomodorosCompleted: 0,
+			IsActive:           false,
+			IsComplete:         false,
+			CreateAt:           time.Now(),
+		},
+		{
+			ID:                 100,
+			Name:               "2",
+			PomodorosRequired:  5,
+			PomodorosCompleted: 0,
+			IsActive:           false,
+			IsComplete:         false,
+			CreateAt:           time.Now(),
+		},
+		{
+			ID:                 100,
+			Name:               "3",
+			PomodorosRequired:  5,
+			PomodorosCompleted: 0,
+			IsActive:           false,
+			IsComplete:         false,
+			CreateAt:           time.Now(),
+		},
+		{
+			ID:                 100,
+			Name:               "3",
+			PomodorosRequired:  5,
+			PomodorosCompleted: 0,
+			IsActive:           false,
+			IsComplete:         false,
+			CreateAt:           time.Now(),
+		},
+		{
+			ID:                 100,
+			Name:               "4",
+			PomodorosRequired:  5,
+			PomodorosCompleted: 0,
+			IsActive:           false,
+			IsComplete:         false,
+			CreateAt:           time.Now(),
+		},
+		{
+			ID:                 100,
+			Name:               "5",
+			PomodorosRequired:  5,
+			PomodorosCompleted: 0,
+			IsActive:           false,
+			IsComplete:         false,
+			CreateAt:           time.Now(),
+		},
+	}
+
+	for _, task := range expectedTasks {
+		err := s.CreateTask(task)
+		require.NoError(t, err)
+
+		require.NotEqualf(t, 100, task.ID, "autoincrement not working")
+	}
+
+	taskInDB, err := s.Tasks()
+	require.NoError(t, err)
+
+	sort.Slice(taskInDB, func(i, j int) bool {
+		return taskInDB[i].Name < taskInDB[j].Name
+	})
+
+	assert.Equal(t, len(expectedTasks), len(taskInDB))
+
+	for i := range taskInDB {
+		assert.Equal(t, expectedTasks[i].ID, taskInDB[i].ID)
+		assert.Equal(t, expectedTasks[i].Name, taskInDB[i].Name)
+		assert.Equal(t, expectedTasks[i].PomodorosRequired, taskInDB[i].PomodorosRequired)
+		assert.Equal(t, expectedTasks[i].PomodorosCompleted, taskInDB[i].PomodorosCompleted)
+	}
+
+	clearTable()
+}
+
 func randomTimestamp() time.Time {
 	now := time.Now()
 
@@ -180,4 +352,5 @@ func randomTimestamp() time.Time {
 
 func clearTable() {
 	s.DB.Exec(`DELETE FROM pomodoros;`)
+	s.DB.Exec(`DELETE FROM TASKS`)
 }
