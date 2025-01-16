@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 SELECT 'up SQL query';
 -- +goose StatementEnd
-CREATE TABLE IF NOT EXISTS tasks (
+CREATE TABLE IF NOT EXISTS pomodoros (
     id INTEGER PRIMARY KEY,
     start_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
     finish_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
@@ -14,4 +14,4 @@ CREATE TABLE IF NOT EXISTS tasks (
 -- +goose StatementBegin
 SELECT 'down SQL query';
 -- +goose StatementEnd
-DROP TABLE IF EXISTS tasks;
+DROP TABLE IF EXISTS pomodoros;

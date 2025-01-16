@@ -4,9 +4,8 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
-	"path/filepath"
-
 	"github.com/arevbond/PomoTrack/config"
+	"path/filepath"
 
 	"github.com/pressly/goose/v3"
 
@@ -42,7 +41,7 @@ func (s *Storage) Migrate() error {
 }
 
 func (s *Storage) CreateTask(task *Task) error {
-	query := `INSERT INTO tasks (start_at, finish_at, duration) VALUES (?, ?, ?) RETURNING id;`
+	query := `INSERT INTO pomodoros (start_at, finish_at, duration) VALUES (?, ?, ?) RETURNING id;`
 
 	args := []any{task.StartAt, task.FinishAt, task.SecondsDuration}
 
@@ -54,7 +53,7 @@ func (s *Storage) CreateTask(task *Task) error {
 }
 
 func (s *Storage) UpdateTask(task *Task) error {
-	query := `UPDATE tasks SET finish_at = ?, duration = ? WHERE id = ?;`
+	query := `UPDATE pomodoros SET finish_at = ?, duration = ? WHERE id = ?;`
 
 	args := []any{task.FinishAt, task.SecondsDuration, task.ID}
 
@@ -66,7 +65,7 @@ func (s *Storage) UpdateTask(task *Task) error {
 }
 
 func (s *Storage) RemoveTask(id int) error {
-	query := `DELETE FROM tasks WHERE id = ?`
+	query := `DELETE FROM pomodoros WHERE id = ?`
 
 	_, err := s.DB.Exec(query, id)
 	if err != nil {
@@ -77,14 +76,14 @@ func (s *Storage) RemoveTask(id int) error {
 
 func (s *Storage) GetTasks() ([]*Task, error) {
 	query := `SELECT id, start_at, finish_at, duration
-			FROM tasks
+			FROM pomodoros
 			ORDER BY start_at DESC`
 	return s.fetchTasks(query)
 }
 
 func (s *Storage) GetTodayTasks() ([]*Task, error) {
 	query := `SELECT id, start_at, finish_at, duration
-			FROM tasks
+			FROM pomodoros
 			WHERE date(start_at) = current_date
 			ORDER BY start_at DESC`
 
