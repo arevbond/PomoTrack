@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"embed"
 	"fmt"
+	"log/slog"
 	"path/filepath"
 
 	"github.com/arevbond/PomoTrack/config"
@@ -17,15 +18,16 @@ import (
 var embeddedMigrations embed.FS
 
 type Storage struct {
-	DB *sql.DB
+	logger *slog.Logger
+	DB     *sql.DB
 }
 
-func NewStorage(filename string) (*Storage, error) {
+func NewStorage(filename string, logger *slog.Logger) (*Storage, error) {
 	db, err := sql.Open("sqlite3", filepath.Join(config.GetConfigDir(), filename))
 	if err != nil {
 		return nil, fmt.Errorf("can't connect to db: %w", err)
 	}
-	return &Storage{DB: db}, nil
+	return &Storage{DB: db, logger: logger}, nil
 }
 
 func (s *Storage) Migrate() error {

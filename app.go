@@ -16,7 +16,7 @@ type Application struct {
 }
 
 func NewApplication(logger *slog.Logger, cfg *config.Config) *Application {
-	database, err := NewStorage(".pomotrack.UserSessions.db")
+	database, err := NewStorage(".pomotrack.UserSessions.db", logger)
 	if err != nil {
 		panic(err)
 	}
