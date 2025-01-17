@@ -25,6 +25,12 @@ type pomodoroTracker interface {
 	FinishRunningPomodoro()
 }
 
+type taskTracker interface {
+	Tasks() ([]*Task, error)
+	CreateTask(task *Task) error
+	DeleteTask(id int) error
+}
+
 type UIManager struct {
 	ui           *tview.Application
 	pages        *tview.Pages
@@ -35,6 +41,8 @@ type UIManager struct {
 	pomodoroTracker      pomodoroTracker
 	statePomodoroUpdates chan StateEvent
 
+	taskTracker taskTracker
+
 	allowedTransitions map[string][]string
 	keyPageMapping     map[tcell.Key]string
 }
@@ -44,31 +52,33 @@ type StateEvent struct {
 	NewState  TimerState
 }
 
-func NewUIManager(logger *slog.Logger, cfg *config.Config, events chan StateEvent, tm pomodoroTracker) *UIManager {
+func NewUIManager(l *slog.Logger, c *config.Config, e chan StateEvent, tm pomodoroTracker, tt taskTracker) *UIManager {
 	stateChangeChan := make(chan StateEvent)
-	focusTimer := NewFocusTimer(cfg.Timer.FocusDuration)
-	breakTimer := NewBreakTimer(cfg.Timer.BreakDuration)
+	focusTimer := NewFocusTimer(c.Timer.FocusDuration)
+	breakTimer := NewBreakTimer(c.Timer.BreakDuration)
 
 	return &UIManager{
 		ui:                   tview.NewApplication(),
 		pages:                tview.NewPages(),
-		logger:               logger,
-		stateManager:         NewStateManager(logger, focusTimer, breakTimer, stateChangeChan, cfg.Timer),
+		logger:               l,
+		stateManager:         NewStateManager(l, focusTimer, breakTimer, stateChangeChan, c.Timer),
 		stateUpdates:         stateChangeChan,
 		pomodoroTracker:      tm,
-		statePomodoroUpdates: events,
+		statePomodoroUpdates: e,
 		allowedTransitions:   constructAllowedTransitions(),
 		keyPageMapping:       constructKeyPageMap(),
+		taskTracker:          tt,
 	}
 }
 
 func constructAllowedTransitions() map[string][]string {
 	return map[string][]string{
-		pauseFocusPage:   {detailStatsPage, pauseBreakPage, summaryStatsPage},
-		pauseBreakPage:   {detailStatsPage, pauseFocusPage, summaryStatsPage},
-		detailStatsPage:  {pauseFocusPage, pauseBreakPage, insertStatsPage, summaryStatsPage},
+		pauseFocusPage:   {detailStatsPage, pauseBreakPage, summaryStatsPage, allTasksPage},
+		pauseBreakPage:   {detailStatsPage, pauseFocusPage, summaryStatsPage, allTasksPage},
+		detailStatsPage:  {pauseFocusPage, pauseBreakPage, insertStatsPage, summaryStatsPage, allTasksPage},
 		insertStatsPage:  {detailStatsPage},
-		summaryStatsPage: {pauseFocusPage, pauseBreakPage, insertStatsPage, detailStatsPage},
+		summaryStatsPage: {pauseFocusPage, pauseBreakPage, insertStatsPage, detailStatsPage, allTasksPage},
+		allTasksPage:     {pauseFocusPage, pauseBreakPage, detailStatsPage, summaryStatsPage},
 	}
 }
 
@@ -79,6 +89,7 @@ func constructKeyPageMap() map[tcell.Key]string {
 		tcell.KeyF3:    detailStatsPage,
 		tcell.KeyCtrlI: insertStatsPage,
 		tcell.KeyF4:    summaryStatsPage,
+		tcell.KeyF5:    allTasksPage,
 	}
 }
 
@@ -126,6 +137,8 @@ func (m *UIManager) keyboardEvents(event *tcell.EventKey) *tcell.EventKey {
 		m.switchToDetailStats(targetPage)
 	case summaryStatsPage:
 		m.switchToSummaryStats()
+	case allTasksPage:
+		m.switchToTasks()
 	default:
 		return event
 	}
@@ -146,6 +159,16 @@ func (m *UIManager) switchToDetailStats(pageName string) {
 		m.renderDetailStatsPage(0, len(pomodoros), pomodoros)
 	}
 	m.pages.SwitchToPage(pageName)
+}
+
+func (m *UIManager) switchToTasks() {
+	tasks, err := m.taskTracker.Tasks()
+	if err != nil {
+		m.logger.Error("can't get tasks", slog.String("func", "renderAllTasls"), slog.Any("error", err))
+		return
+	}
+	m.renderAllTasksPage(tasks)
+	m.pages.SwitchToPage(allTasksPage)
 }
 
 func (m *UIManager) switchToSummaryStats() {

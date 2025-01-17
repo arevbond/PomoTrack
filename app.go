@@ -30,7 +30,7 @@ func NewApplication(logger *slog.Logger, cfg *config.Config) *Application {
 
 	app := &Application{
 		logger:    logger,
-		uiManager: NewUIManager(logger, cfg, stateEvents, NewPomodoroManager(logger, database, stateEvents)),
+		uiManager: NewUIManager(logger, cfg, stateEvents, NewPomodoroManager(logger, database, stateEvents), database),
 	}
 
 	app.uiManager.DefaultTimerPages()

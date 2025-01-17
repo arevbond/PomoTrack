@@ -18,7 +18,7 @@ const (
 	summaryStatsPage = "Summary-Statistics"
 )
 
-const statisticsPageSize = 6
+const statisticsPageSize = 5
 
 func (m *UIManager) renderDetailStatsPage(start, end int, pomodoros []*Pomodoro) {
 	table := m.newStatsTable(start, end, pomodoros)

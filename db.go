@@ -5,9 +5,6 @@ import (
 	"embed"
 	"fmt"
 	"log/slog"
-	"path/filepath"
-
-	"github.com/arevbond/PomoTrack/config"
 
 	"github.com/pressly/goose/v3"
 
@@ -23,7 +20,8 @@ type Storage struct {
 }
 
 func NewStorage(filename string, logger *slog.Logger) (*Storage, error) {
-	db, err := sql.Open("sqlite3", filepath.Join(config.GetConfigDir(), filename))
+	//db, err := sql.Open("sqlite3", filepath.Join(config.GetConfigDir(), filename))
+	db, err := sql.Open("sqlite3", filename)
 	if err != nil {
 		return nil, fmt.Errorf("can't connect to db: %w", err)
 	}
@@ -151,7 +149,7 @@ func (s *Storage) Tasks() ([]*Task, error) {
 }
 
 func (s *Storage) CreateTask(task *Task) error {
-	query := `INSERT INTO tasks (name, pomodoros_required, pomodoros_completed, is_complete, is_active) 
+	query := `INSERT INTO tasks (name, pomodoros_required, pomodoros_completed, is_complete, is_active)
 				VALUES (?, ?, ?, ?, ?)
 				RETURNING id`
 	args := []any{task.Name, task.PomodorosRequired, task.PomodorosCompleted, task.IsComplete, task.IsActive}
