@@ -96,9 +96,9 @@ func (m *UIManager) keyboardEvents(event *tcell.EventKey) *tcell.EventKey {
 }
 
 func (m *UIManager) switchToDetailStats() {
-	pomodoros, err := m.pomodoroTracker.TodayPomodoros()
+	pomodoros, err := m.pomodoroTracker.Pomodoros()
 	if err != nil {
-		m.logger.Error("can't get today pomodoros", slog.Any("error", err))
+		m.logger.Error("can't get pomodoros", slog.Any("error", err))
 		return
 	}
 

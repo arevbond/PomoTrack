@@ -11,7 +11,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-const statisticsPageSize = 5
+const statisticsPageSize = 7
 
 func (m *UIManager) renderDetailStatsPage(start, end int, pomodoros []*Pomodoro) *PageComponent {
 	table := m.newStatsTable(start, end, pomodoros)
@@ -86,7 +86,7 @@ func (m *UIManager) newStatsButtons(start, end int, pomodoros []*Pomodoro) []*tv
 
 	if start >= statisticsPageSize {
 		prevButton := tview.NewButton("Prev").SetSelectedFunc(func() {
-			m.AddPageAndSwitch(m.renderDetailStatsPage(start-statisticsPageSize, start, pomodoros).WithBottomPanel())
+			m.AddPageAndSwitch(m.renderDetailStatsPage(start-statisticsPageSize, start, pomodoros))
 		})
 
 		buttons = append(buttons, prevButton)
