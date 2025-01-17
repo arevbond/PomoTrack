@@ -8,14 +8,6 @@ import (
 	"github.com/rivo/tview"
 )
 
-const (
-	activeFocusPage = "Active-Focus"
-	pauseFocusPage  = "Stop-Focus"
-
-	activeBreakPage = "Active-Break"
-	pauseBreakPage  = "Stop-Break"
-)
-
 func formatDuration(d time.Duration) string {
 	totalSeconds := int(d.Seconds())
 
@@ -24,7 +16,7 @@ func formatDuration(d time.Duration) string {
 	return fmt.Sprintf("%02d:%02d", minutes, seconds)
 }
 
-func (m *UIManager) renderPausePage(pageName string, title string, timerType TimerType) *PageComponent {
+func (m *UIManager) renderPausePage(pageName PageName, title string, timerType TimerType) *PageComponent {
 	pauseText := tview.NewTextView().
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter).
@@ -51,7 +43,7 @@ func (m *UIManager) renderPausePage(pageName string, title string, timerType Tim
 	return NewPageComponent(pageName, grid, true, true)
 }
 
-func (m *UIManager) renderActivePage(pageName string, color, title string, timerType TimerType) *PageComponent {
+func (m *UIManager) renderActivePage(pageName PageName, color, title string, timerType TimerType) *PageComponent {
 	breakText := tview.NewTextView().
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter).

@@ -5,13 +5,13 @@ import (
 )
 
 type PageComponent struct {
-	name    string
+	name    PageName
 	item    tview.Primitive
 	resize  bool
 	visible bool
 }
 
-func NewPageComponent(name string, item tview.Primitive, resize bool, visible bool) *PageComponent {
+func NewPageComponent(name PageName, item tview.Primitive, resize bool, visible bool) *PageComponent {
 	return &PageComponent{
 		name:    name,
 		item:    item,

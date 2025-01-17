@@ -6,10 +6,6 @@ import (
 	"github.com/rivo/tview"
 )
 
-const (
-	allTasksPage = "All-Tasks-Pages"
-)
-
 func (m *UIManager) renderAllTasksPage(tasks []*Task) *PageComponent {
 	list := tview.NewList()
 	for _, task := range tasks {

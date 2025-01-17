@@ -86,7 +86,7 @@ func (m *UIManager) newStatsButtons(start, end int, pomodoros []*Pomodoro) []*tv
 
 	if start >= statisticsPageSize {
 		prevButton := tview.NewButton("Prev").SetSelectedFunc(func() {
-			m.AddPageAndSwitch(m.renderDetailStatsPage(start-statisticsPageSize, start, pomodoros))
+			m.AddPageAndSwitch(m.renderDetailStatsPage(start-statisticsPageSize, start, pomodoros).WithBottomPanel())
 		})
 
 		buttons = append(buttons, prevButton)
@@ -239,7 +239,6 @@ func (m *UIManager) renderInsertStatsPage(start, end int, pomodoros []*Pomodoro)
 	}
 
 	return NewPageComponent(insertStatsPage, grid, true, false)
-	// m.pages.AddPage(insertStatsPage, grid, true, false)
 }
 
 func checkTimeInInput() func(textToCheck string, lastChar rune) bool {
@@ -283,7 +282,6 @@ func (m *UIManager) savePomodoro(form *tview.Form) func() {
 		if err != nil {
 			m.logger.Error("can't create pomodoro", slog.Any("error", err))
 			m.switchToIntesrStats()
-			// m.switchToDetailStats(insertStatsPage)
 			return
 		}
 		m.switchToDetailStats()

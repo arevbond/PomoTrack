@@ -7,8 +7,25 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
-func constructAllowedTransitions() map[string][]string {
-	return map[string][]string{
+type PageName string
+
+const (
+	activeFocusPage PageName = "Active-Focus"
+	pauseFocusPage  PageName = "Stop-Focus"
+
+	activeBreakPage PageName = "Active-Break"
+	pauseBreakPage  PageName = "Stop-Break"
+
+	allTasksPage PageName = "All-Tasks-Pages"
+
+	detailStatsPage PageName = "Detail-Statistics"
+	insertStatsPage PageName = "Insert-Statistics"
+
+	summaryStatsPage PageName = "Summary-Statistics"
+)
+
+func constructAllowedTransitions() map[PageName][]PageName {
+	return map[PageName][]PageName{
 		pauseFocusPage:   {detailStatsPage, pauseBreakPage, summaryStatsPage, allTasksPage},
 		pauseBreakPage:   {detailStatsPage, pauseFocusPage, summaryStatsPage, allTasksPage},
 		detailStatsPage:  {pauseFocusPage, pauseBreakPage, insertStatsPage, summaryStatsPage, allTasksPage},
@@ -18,8 +35,8 @@ func constructAllowedTransitions() map[string][]string {
 	}
 }
 
-func constructKeyPageMap() map[tcell.Key]string {
-	return map[tcell.Key]string{
+func constructKeyPageMap() map[tcell.Key]PageName {
+	return map[tcell.Key]PageName{
 		tcell.KeyF1:    pauseFocusPage,
 		tcell.KeyF2:    pauseBreakPage,
 		tcell.KeyF3:    detailStatsPage,
@@ -33,7 +50,7 @@ func (m *UIManager) setKeyboardEvents() {
 	m.ui.SetInputCapture(m.keyboardEvents)
 }
 
-func (m *UIManager) canSwitchTo(targetPage string) bool {
+func (m *UIManager) canSwitchTo(targetPage PageName) bool {
 	curPage, _ := m.pages.GetFrontPage()
 
 	allowedPages, ok := m.allowedTransitions[targetPage]
@@ -41,7 +58,7 @@ func (m *UIManager) canSwitchTo(targetPage string) bool {
 		return false
 	}
 	for _, allowedPage := range allowedPages {
-		if curPage == allowedPage {
+		if PageName(curPage) == allowedPage {
 			return true
 		}
 	}

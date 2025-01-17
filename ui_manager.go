@@ -42,8 +42,8 @@ type UIManager struct {
 
 	taskTracker taskTracker
 
-	allowedTransitions map[string][]string
-	keyPageMapping     map[tcell.Key]string
+	allowedTransitions map[PageName][]PageName
+	keyPageMapping     map[tcell.Key]PageName
 }
 
 type StateEvent struct {
@@ -75,9 +75,9 @@ func (m *UIManager) DefaultPage() {
 }
 
 func (m *UIManager) AddPageAndSwitch(page *PageComponent) {
-	m.pages.AddAndSwitchToPage(page.name, page.item, page.resize)
+	m.pages.AddAndSwitchToPage(string(page.name), page.item, page.resize)
 }
 
 func (m *UIManager) AddPageComponent(page *PageComponent) {
-	m.pages.AddPage(page.name, page.item, page.resize, page.visible)
+	m.pages.AddPage(string(page.name), page.item, page.resize, page.visible)
 }
