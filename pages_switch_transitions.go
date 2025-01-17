@@ -4,72 +4,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/arevbond/PomoTrack/config"
-
 	"github.com/gdamore/tcell/v2"
-
-	"github.com/rivo/tview"
 )
-
-const screenRefreshInterval = 1 * time.Second
-
-type pomodoroTracker interface {
-	HandlePomodoroStateChanges()
-	TodayPomodoros() ([]*Pomodoro, error)
-	Pomodoros() ([]*Pomodoro, error)
-	RemovePomodoro(id int) error
-	CreateNewPomodoro(startAt time.Time, finishAt time.Time, duration int) (*Pomodoro, error)
-	Hours([]*Pomodoro) float64
-	CountDays([]*Pomodoro) int
-	HoursInWeek([]*Pomodoro) [7]int
-	FinishRunningPomodoro()
-}
-
-type taskTracker interface {
-	Tasks() ([]*Task, error)
-	CreateTask(task *Task) error
-	DeleteTask(id int) error
-}
-
-type UIManager struct {
-	ui           *tview.Application
-	pages        *tview.Pages
-	logger       *slog.Logger
-	stateManager *StateManager
-	stateUpdates chan StateEvent
-
-	pomodoroTracker      pomodoroTracker
-	statePomodoroUpdates chan StateEvent
-
-	taskTracker taskTracker
-
-	allowedTransitions map[string][]string
-	keyPageMapping     map[tcell.Key]string
-}
-
-type StateEvent struct {
-	TimerType TimerType
-	NewState  TimerState
-}
-
-func NewUIManager(l *slog.Logger, c *config.Config, e chan StateEvent, tm pomodoroTracker, tt taskTracker) *UIManager {
-	stateChangeChan := make(chan StateEvent)
-	focusTimer := NewFocusTimer(c.Timer.FocusDuration)
-	breakTimer := NewBreakTimer(c.Timer.BreakDuration)
-
-	return &UIManager{
-		ui:                   tview.NewApplication(),
-		pages:                tview.NewPages(),
-		logger:               l,
-		stateManager:         NewStateManager(l, focusTimer, breakTimer, stateChangeChan, c.Timer),
-		stateUpdates:         stateChangeChan,
-		pomodoroTracker:      tm,
-		statePomodoroUpdates: e,
-		allowedTransitions:   constructAllowedTransitions(),
-		keyPageMapping:       constructKeyPageMap(),
-		taskTracker:          tt,
-	}
-}
 
 func constructAllowedTransitions() map[string][]string {
 	return map[string][]string{
@@ -91,13 +27,6 @@ func constructKeyPageMap() map[tcell.Key]string {
 		tcell.KeyF4:    summaryStatsPage,
 		tcell.KeyF5:    allTasksPage,
 	}
-}
-
-func (m *UIManager) DefaultTimerPages() {
-	m.renderActivePage(activeFocusPage, "red", "Pomodoro", FocusTimer)
-	m.renderActivePage(activeBreakPage, "green", "Break", BreakTimer)
-	m.renderPausePage(pauseBreakPage, "Break", BreakTimer)
-	m.renderPausePage(pauseFocusPage, "Pomodoro", FocusTimer)
 }
 
 func (m *UIManager) setKeyboardEvents() {
@@ -131,10 +60,14 @@ func (m *UIManager) keyboardEvents(event *tcell.EventKey) *tcell.EventKey {
 	}
 
 	switch targetPage {
-	case pauseFocusPage, pauseBreakPage:
-		m.pages.SwitchToPage(targetPage)
-	case detailStatsPage, insertStatsPage:
-		m.switchToDetailStats(targetPage)
+	case pauseFocusPage:
+		m.AddPageAndSwitch(m.renderPausePage(pauseFocusPage, "Pomodoro", FocusTimer).WithBottomPanel())
+	case pauseBreakPage:
+		m.AddPageAndSwitch(m.renderPausePage(pauseBreakPage, "Break", BreakTimer).WithBottomPanel())
+	case detailStatsPage:
+		m.switchToDetailStats()
+	case insertStatsPage:
+		m.switchToIntesrStats()
 	case summaryStatsPage:
 		m.switchToSummaryStats()
 	case allTasksPage:
@@ -145,20 +78,38 @@ func (m *UIManager) keyboardEvents(event *tcell.EventKey) *tcell.EventKey {
 	return nil
 }
 
-func (m *UIManager) switchToDetailStats(pageName string) {
+func (m *UIManager) switchToDetailStats() {
 	pomodoros, err := m.pomodoroTracker.TodayPomodoros()
 	if err != nil {
 		m.logger.Error("can't get today pomodoros", slog.Any("error", err))
 		return
 	}
+
+	var page *PageComponent
 	if len(pomodoros) > statisticsPageSize {
-		m.renderInsertStatsPage(0, statisticsPageSize, pomodoros)
-		m.renderDetailStatsPage(0, statisticsPageSize, pomodoros)
+		page = m.renderDetailStatsPage(0, statisticsPageSize, pomodoros)
 	} else {
-		m.renderInsertStatsPage(0, len(pomodoros), pomodoros)
-		m.renderDetailStatsPage(0, len(pomodoros), pomodoros)
+		page = m.renderDetailStatsPage(0, len(pomodoros), pomodoros)
 	}
-	m.pages.SwitchToPage(pageName)
+
+	m.AddPageAndSwitch(page.WithBottomPanel())
+}
+
+func (m *UIManager) switchToIntesrStats() {
+	pomodoros, err := m.pomodoroTracker.TodayPomodoros()
+	if err != nil {
+		m.logger.Error("can't get today pomodoros", slog.Any("error", err))
+		return
+	}
+
+	var page *PageComponent
+	if len(pomodoros) > statisticsPageSize {
+		page = m.renderInsertStatsPage(0, statisticsPageSize, pomodoros)
+	} else {
+		page = m.renderInsertStatsPage(0, len(pomodoros), pomodoros)
+	}
+
+	m.AddPageAndSwitch(page)
 }
 
 func (m *UIManager) switchToTasks() {
@@ -167,8 +118,8 @@ func (m *UIManager) switchToTasks() {
 		m.logger.Error("can't get tasks", slog.String("func", "renderAllTasls"), slog.Any("error", err))
 		return
 	}
-	m.renderAllTasksPage(tasks)
-	m.pages.SwitchToPage(allTasksPage)
+	tasksPage := m.renderAllTasksPage(tasks)
+	m.AddPageAndSwitch(tasksPage.WithBottomPanel())
 }
 
 func (m *UIManager) switchToSummaryStats() {
@@ -178,13 +129,13 @@ func (m *UIManager) switchToSummaryStats() {
 		return
 	}
 
-	m.renderSummaryStatsPage(
+	summaryStatsPage := m.renderSummaryStatsPage(
 		m.pomodoroTracker.Hours(pomodoros),
 		m.pomodoroTracker.CountDays(pomodoros),
 		m.pomodoroTracker.HoursInWeek(pomodoros),
 	)
 
-	m.pages.SwitchToPage(summaryStatsPage)
+	m.AddPageAndSwitch(summaryStatsPage.WithBottomPanel())
 }
 
 func (m *UIManager) InitStateAndKeyboardHandling() {
@@ -199,7 +150,7 @@ func (m *UIManager) listenToStateChanges(stopRefreshing chan struct{}) {
 
 		switch event.NewState {
 		case StateActive:
-			m.handleStateActive(event.TimerType, stopRefreshing)
+			m.switchToActive(event.TimerType, stopRefreshing)
 
 		case StatePaused, StateFinished:
 			stopRefreshing <- struct{}{}
@@ -213,14 +164,20 @@ func (m *UIManager) listenToStateChanges(stopRefreshing chan struct{}) {
 	}
 }
 
-func (m *UIManager) handleStateActive(timerType TimerType, stopSignal chan struct{}) {
+func (m *UIManager) switchToActive(timerType TimerType, stopSignal chan struct{}) {
 	go playClickSound()
 
 	switch timerType {
 	case FocusTimer:
-		m.displayPage(activeFocusPage)
+		page := m.renderActivePage(activeFocusPage, "red", "Pomodoro", FocusTimer)
+		m.ui.QueueUpdateDraw(func() {
+			m.AddPageAndSwitch(page)
+		})
 	case BreakTimer:
-		m.displayPage(activeBreakPage)
+		page := m.renderActivePage(activeBreakPage, "green", "Break", BreakTimer)
+		m.ui.QueueUpdateDraw(func() {
+			m.AddPageAndSwitch(page)
+		})
 	}
 
 	go m.updateUIWithTicker(stopSignal)
@@ -245,9 +202,9 @@ func (m *UIManager) handleStatePaused(timerType TimerType) {
 
 	switch timerType {
 	case FocusTimer:
-		m.renderPausePageForTimer(FocusTimer)
+		m.switchToBreak(FocusTimer)
 	case BreakTimer:
-		m.renderPausePageForTimer(BreakTimer)
+		m.switchToBreak(BreakTimer)
 	}
 }
 
@@ -256,25 +213,23 @@ func (m *UIManager) handleStateFinished(timerType TimerType) {
 
 	switch timerType {
 	case FocusTimer:
-		m.renderPausePageForTimer(BreakTimer)
+		m.switchToBreak(BreakTimer)
 	case BreakTimer:
-		m.renderPausePageForTimer(FocusTimer)
+		m.switchToBreak(FocusTimer)
 	}
 }
 
-func (m *UIManager) renderPausePageForTimer(timerType TimerType) {
+func (m *UIManager) switchToBreak(timerType TimerType) {
 	switch timerType {
 	case BreakTimer:
-		m.renderPausePage(pauseBreakPage, "Break", BreakTimer)
-		m.displayPage(pauseBreakPage)
+		page := m.renderPausePage(pauseBreakPage, "Break", BreakTimer).WithBottomPanel()
+		m.ui.QueueUpdateDraw(func() {
+			m.AddPageAndSwitch(page)
+		})
 	case FocusTimer:
-		m.renderPausePage(pauseFocusPage, "Pomodoro", FocusTimer)
-		m.displayPage(pauseFocusPage)
+		page := m.renderPausePage(pauseFocusPage, "Pomodoro", FocusTimer).WithBottomPanel()
+		m.ui.QueueUpdateDraw(func() {
+			m.AddPageAndSwitch(page)
+		})
 	}
-}
-
-func (m *UIManager) displayPage(pageName string) {
-	m.ui.QueueUpdateDraw(func() {
-		m.pages.SwitchToPage(pageName)
-	})
 }

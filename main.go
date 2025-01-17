@@ -23,6 +23,9 @@ func main() {
 
 	app := NewApplication(logger, cfg)
 
+	// non blocking operation using goroutins
+	app.Run()
+
 	if err = app.uiManager.ui.SetRoot(app.uiManager.pages, true).
 		SetFocus(app.uiManager.pages).Run(); err != nil {
 		panic(err)

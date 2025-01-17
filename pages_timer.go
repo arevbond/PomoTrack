@@ -24,7 +24,7 @@ func formatDuration(d time.Duration) string {
 	return fmt.Sprintf("%02d:%02d", minutes, seconds)
 }
 
-func (m *UIManager) renderPausePage(pageName string, title string, timerType TimerType) {
+func (m *UIManager) renderPausePage(pageName string, title string, timerType TimerType) *PageComponent {
 	pauseText := tview.NewTextView().
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter).
@@ -39,8 +39,6 @@ func (m *UIManager) renderPausePage(pageName string, title string, timerType Tim
 		m.stateManager.SetState(StateActive, timerType)
 	})
 
-	hotKeysPanel := constructBottomPanel(pageName)
-
 	grid := tview.NewGrid().
 		SetRows(0, 1, 3, 1, 0, 1).
 		SetColumns(0, 0, 15, 0, 0).
@@ -49,12 +47,11 @@ func (m *UIManager) renderPausePage(pageName string, title string, timerType Tim
 	grid.AddItem(pauseText, 1, 2, 1, 1, 0, 0, false)
 	grid.AddItem(durationText, 2, 2, 1, 1, 0, 0, false)
 	grid.AddItem(startButton, 3, 2, 1, 1, 0, 0, true)
-	grid.AddItem(hotKeysPanel, 5, 1, 1, 3, 0, 0, false)
 
-	m.pages.AddPage(pageName, grid, true, true)
+	return NewPageComponent(pageName, grid, true, true)
 }
 
-func (m *UIManager) renderActivePage(pageName string, color, title string, timerType TimerType) {
+func (m *UIManager) renderActivePage(pageName string, color, title string, timerType TimerType) *PageComponent {
 	breakText := tview.NewTextView().
 		SetDynamicColors(true).
 		SetTextAlign(tview.AlignCenter).
@@ -116,5 +113,5 @@ func (m *UIManager) renderActivePage(pageName string, color, title string, timer
 		return nil
 	})
 
-	m.pages.AddPage(pageName, grid, true, false)
+	return NewPageComponent(pageName, grid, true, false)
 }

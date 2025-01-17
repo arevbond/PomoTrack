@@ -33,10 +33,13 @@ func NewApplication(logger *slog.Logger, cfg *config.Config) *Application {
 		uiManager: NewUIManager(logger, cfg, stateEvents, NewPomodoroManager(logger, database, stateEvents), database),
 	}
 
-	app.uiManager.DefaultTimerPages()
+	return app
+}
+
+// Run - initializaion appication background tasks.
+func (app *Application) Run() {
+	app.uiManager.DefaultPage()
 
 	go app.uiManager.InitStateAndKeyboardHandling()
 	go app.uiManager.pomodoroTracker.HandlePomodoroStateChanges()
-
-	return app
 }

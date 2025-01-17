@@ -10,7 +10,7 @@ const (
 	allTasksPage = "All-Tasks-Pages"
 )
 
-func (m *UIManager) renderAllTasksPage(tasks []*Task) {
+func (m *UIManager) renderAllTasksPage(tasks []*Task) *PageComponent {
 	list := tview.NewList()
 	for _, task := range tasks {
 		list = list.AddItem(task.Name, fmt.Sprintf("%d/%d", task.PomodorosCompleted, task.PomodorosRequired),
@@ -18,11 +18,10 @@ func (m *UIManager) renderAllTasksPage(tasks []*Task) {
 	}
 
 	grid := tview.NewGrid().
-		SetRows(20, 0).
-		SetColumns(0, 46, 0).
-		SetBorders(true)
+		SetRows(0).
+		SetColumns(0, 23, 23, 0)
 
-	grid.AddItem(list, 0, 1, 1, 1, 0, 0, true)
+	grid.AddItem(list, 0, 1, 1, 2, 0, 0, true)
 
-	m.pages.AddPage(allTasksPage, grid, true, false)
+	return NewPageComponent(allTasksPage, grid, true, false)
 }
