@@ -21,7 +21,7 @@ func (m *UIManager) NewSummaryPage() *Page {
 		m.pomodoroTracker.HoursInWeek(pomodoros),
 	)
 
-	return NewPageComponent(summaryStatsPage, true, false, render)
+	return NewPageComponent(summaryStatsPage, true, render)
 }
 
 func (m *UIManager) renderSummaryStatsPage(args ...any) func() tview.Primitive {

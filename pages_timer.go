@@ -32,7 +32,7 @@ func (m *UIManager) NewActivePage(timerType TimerType, stopSignal chan struct{})
 	}
 
 	go m.updateUIWithTicker(stopSignal)
-	return NewPageComponent(pageName, true, false, render)
+	return NewPageComponent(pageName, true, render)
 }
 
 func (m *UIManager) updateUIWithTicker(quit chan struct{}) {
@@ -60,7 +60,7 @@ func (m *UIManager) NewPausePage(timerType TimerType) *Page {
 		pageName = pauseFocusPage
 		render = m.renderPausePage("Pomodoro", FocusTimer)
 	}
-	return NewPageComponent(pageName, true, false, render)
+	return NewPageComponent(pageName, true, render)
 }
 
 func (m *UIManager) handleStatePaused(timerType TimerType) {

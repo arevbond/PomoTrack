@@ -30,7 +30,7 @@ func (m *UIManager) NewDetailStats(start, end int) *Page {
 		}
 	}
 
-	return NewPageComponent(detailStatsPage, true, false, m.renderDetailStatsPage(start, end, pomodoros))
+	return NewPageComponent(detailStatsPage, true, m.renderDetailStatsPage(start, end, pomodoros))
 }
 
 func (m *UIManager) NewInsertDetailPage(start, end int) *Page {
@@ -50,7 +50,7 @@ func (m *UIManager) NewInsertDetailPage(start, end int) *Page {
 		}
 	}
 
-	return NewPageComponent(insertStatsPage, true, false, m.renderInsertStatsPage(start, end, pomodoros))
+	return NewPageComponent(insertStatsPage, true, m.renderInsertStatsPage(start, end, pomodoros))
 }
 
 func (m *UIManager) renderDetailStatsPage(args ...any) func() tview.Primitive {

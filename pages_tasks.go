@@ -14,7 +14,7 @@ func (m *UIManager) NewTasksPage() *Page {
 		return nil
 	}
 	renderFunc := m.renderAllTasksPage(tasks)
-	return NewPageComponent(allTasksPage, true, false, renderFunc)
+	return NewPageComponent(allTasksPage, true, renderFunc)
 }
 
 func (m *UIManager) renderAllTasksPage(args ...any) func() tview.Primitive {
