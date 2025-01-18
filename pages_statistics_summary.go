@@ -7,7 +7,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-func (m *UIManager) renderSummaryStatsPage(totalHours float64, totalDays int, weekdayHours [7]int) *PageComponent {
+func (m *UIManager) renderSummaryStatsPage(totalHours float64, totalDays int, weekdayHours [7]int) tview.Primitive {
 	table := tview.NewTable().
 		SetBorders(true)
 
@@ -29,5 +29,6 @@ func (m *UIManager) renderSummaryStatsPage(totalHours float64, totalDays int, we
 	grid.AddItem(table, 0, 1, 1, 1, 0, 0, false)
 	grid.AddItem(bar, 1, 1, 1, 1, 0, 0, false)
 
-	return NewPageComponent(summaryStatsPage, grid, true, false)
+	return grid
+	//return NewPageComponent(summaryStatsPage, grid, true, false)
 }

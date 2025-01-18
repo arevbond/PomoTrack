@@ -43,7 +43,7 @@ type UIManager struct {
 	taskTracker taskTracker
 
 	allowedTransitions map[PageName][]PageName
-	keyPageMapping     map[tcell.Key]PageName
+	keyPageMapping     map[tcell.Key]*Page
 }
 
 type StateEvent struct {
@@ -56,7 +56,7 @@ func NewUIManager(l *slog.Logger, c *config.Config, e chan StateEvent, tm pomodo
 	focusTimer := NewFocusTimer(c.Timer.FocusDuration)
 	breakTimer := NewBreakTimer(c.Timer.BreakDuration)
 
-	return &UIManager{
+	m := &UIManager{
 		ui:                   tview.NewApplication(),
 		pages:                tview.NewPages(),
 		logger:               l,
@@ -65,19 +65,23 @@ func NewUIManager(l *slog.Logger, c *config.Config, e chan StateEvent, tm pomodo
 		pomodoroTracker:      tm,
 		statePomodoroUpdates: e,
 		allowedTransitions:   constructAllowedTransitions(),
-		keyPageMapping:       constructKeyPageMap(),
 		taskTracker:          tt,
 	}
+	m.keyPageMapping = m.constructKeyPageMap()
+	return m
 }
 
 func (m *UIManager) DefaultPage() {
-	m.AddPageAndSwitch(m.renderPausePage(pauseFocusPage, "Pomodoro", FocusTimer).WithBottomPanel())
+	//pauseFocus := NewPageComponent(pauseFocusPage, true, true,
+	//	m.renderPausePage( "Pomodoro", FocusTimer))
+	pauseFocus := m.NewPausePage(FocusTimer)
+	m.AddPageAndSwitch(pauseFocus)
 }
 
-func (m *UIManager) AddPageAndSwitch(page *PageComponent) {
-	m.pages.AddAndSwitchToPage(string(page.name), page.item, page.resize)
+func (m *UIManager) AddPageAndSwitch(page *Page) {
+	m.pages.AddAndSwitchToPage(string(page.name), page.render(), page.resize)
 }
 
-func (m *UIManager) AddPageComponent(page *PageComponent) {
-	m.pages.AddPage(string(page.name), page.item, page.resize, page.visible)
-}
+//func (m *UIManager) AddPageComponent(page *Page) {
+//	m.pages.AddPage(string(page.name), page.item, page.resize, page.visible)
+//}

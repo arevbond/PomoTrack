@@ -13,30 +13,35 @@ import (
 
 const statisticsPageSize = 7
 
-func (m *UIManager) renderDetailStatsPage(start, end int, pomodoros []*Pomodoro) *PageComponent {
-	table := m.newStatsTable(start, end, pomodoros)
+func (m *UIManager) renderDetailStatsPage(args ...any) func() tview.Primitive {
+	// 		start, end int, pomodoros []*Pomodoro
+	start := args[0].(int)
+	end := args[1].(int)
+	pomodoros := args[2].([]*Pomodoro)
+	return func() tview.Primitive {
+		table := m.newStatsTable(start, end, pomodoros)
 
-	buttons := m.newStatsButtons(start, end, pomodoros)
+		buttons := m.newStatsButtons(start, end, pomodoros)
 
-	text := tview.NewTextView().
-		SetTextAlign(tview.AlignCenter).
-		SetText(fmt.Sprintf("Total: %s", m.totalDuration(pomodoros))).
-		SetDynamicColors(true)
+		text := tview.NewTextView().
+			SetTextAlign(tview.AlignCenter).
+			SetText(fmt.Sprintf("Total: %s", m.totalDuration(pomodoros))).
+			SetDynamicColors(true)
 
-	grid := tview.NewGrid().
-		SetRows(1, 0, 1).
-		SetColumns(0, 23, 23, 0)
+		grid := tview.NewGrid().
+			SetRows(1, 0, 1).
+			SetColumns(0, 23, 23, 0)
 
-	grid.AddItem(text, 0, 1, 1, 2, 0, 0, false)
-	grid.AddItem(table, 1, 1, 1, 2, 0, 0, true)
+		grid.AddItem(text, 0, 1, 1, 2, 0, 0, false)
+		grid.AddItem(table, 1, 1, 1, 2, 0, 0, true)
 
-	for i, button := range buttons {
-		grid.AddItem(button, 2, i+1, 1, 1, 0, 0, true)
+		for i, button := range buttons {
+			grid.AddItem(button, 2, i+1, 1, 1, 0, 0, true)
+		}
+
+		grid.SetInputCapture(m.captureStatsInput(table, buttons))
+		return grid
 	}
-
-	grid.SetInputCapture(m.captureStatsInput(table, buttons))
-
-	return NewPageComponent(detailStatsPage, grid, true, false)
 }
 
 func (m *UIManager) captureStatsInput(
@@ -86,7 +91,7 @@ func (m *UIManager) newStatsButtons(start, end int, pomodoros []*Pomodoro) []*tv
 
 	if start >= statisticsPageSize {
 		prevButton := tview.NewButton("Prev").SetSelectedFunc(func() {
-			m.AddPageAndSwitch(m.renderDetailStatsPage(start-statisticsPageSize, start, pomodoros))
+			//m.AddPageAndSwitch(m.renderDetailStatsPage(start-statisticsPageSize, start, pomodoros))
 		})
 
 		buttons = append(buttons, prevButton)
@@ -94,9 +99,9 @@ func (m *UIManager) newStatsButtons(start, end int, pomodoros []*Pomodoro) []*tv
 	if end < len(pomodoros) {
 		nextButton := tview.NewButton("Next").SetSelectedFunc(func() {
 			if end+5 < len(pomodoros) {
-				m.AddPageAndSwitch(m.renderDetailStatsPage(end, end+statisticsPageSize, pomodoros).WithBottomPanel())
+				//m.AddPageAndSwitch(m.renderDetailStatsPage(end, end+statisticsPageSize, pomodoros).WithBottomPanel())
 			} else {
-				m.AddPageAndSwitch(m.renderDetailStatsPage(end, len(pomodoros), pomodoros).WithBottomPanel())
+				//m.AddPageAndSwitch(m.renderDetailStatsPage(end, len(pomodoros), pomodoros).WithBottomPanel())
 			}
 		})
 
@@ -191,9 +196,9 @@ func (m *UIManager) removePomodoro(pomodoros []*Pomodoro, pomodoroIndx int) {
 
 	pomodoros = append(pomodoros[:pomodoroIndx], pomodoros[pomodoroIndx+1:]...)
 	if len(pomodoros) > 5 {
-		m.AddPageAndSwitch(m.renderDetailStatsPage(0, statisticsPageSize, pomodoros).WithBottomPanel())
+		//m.AddPageAndSwitch(m.renderDetailStatsPage(0, statisticsPageSize, pomodoros).WithBottomPanel())
 	} else {
-		m.AddPageAndSwitch(m.renderDetailStatsPage(0, len(pomodoros), pomodoros).WithBottomPanel())
+		//m.AddPageAndSwitch(m.renderDetailStatsPage(0, len(pomodoros), pomodoros).WithBottomPanel())
 	}
 }
 
@@ -206,39 +211,44 @@ func (m *UIManager) totalDuration(pomodoros []*Pomodoro) string {
 	return res.String()
 }
 
-func (m *UIManager) renderInsertStatsPage(start, end int, pomodoros []*Pomodoro) *PageComponent {
-	table := m.newStatsTable(start, end, pomodoros)
+func (m *UIManager) renderInsertStatsPage(args ...any) func() tview.Primitive {
+	// start, end int, pomodoros []*Pomodoro
+	start := args[0].(int)
+	end := args[1].(int)
+	pomodoros := args[2].([]*Pomodoro)
+	return func() tview.Primitive {
+		table := m.newStatsTable(start, end, pomodoros)
 
-	buttons := m.newStatsButtons(start, end, pomodoros)
+		buttons := m.newStatsButtons(start, end, pomodoros)
 
-	text := tview.NewTextView().
-		SetTextAlign(tview.AlignCenter).
-		SetText(fmt.Sprintf("Total: %s", m.totalDuration(pomodoros))).
-		SetDynamicColors(true)
+		text := tview.NewTextView().
+			SetTextAlign(tview.AlignCenter).
+			SetText(fmt.Sprintf("Total: %s", m.totalDuration(pomodoros))).
+			SetDynamicColors(true)
 
-	form := tview.NewForm().
-		SetHorizontal(true).
-		AddInputField("Time start", time.Now().Format("15:04"), 7, checkTimeInInput(), nil).
-		AddInputField("Minutes", "0", 5, tview.InputFieldInteger, nil)
+		form := tview.NewForm().
+			SetHorizontal(true).
+			AddInputField("Time start", time.Now().Format("15:04"), 7, checkTimeInInput(), nil).
+			AddInputField("Minutes", "0", 5, tview.InputFieldInteger, nil)
 
-	form.AddButton("Save", m.savePomodoro(form))
+		form.AddButton("Save", m.savePomodoro(form))
 
-	grid := tview.NewGrid().
-		SetRows(1, 3, 0, 1, 1).
-		SetColumns(0, 23, 23, 0).
-		SetBorders(true)
+		grid := tview.NewGrid().
+			SetRows(1, 3, 0, 1, 1).
+			SetColumns(0, 23, 23, 0).
+			SetBorders(true)
 
-	grid.AddItem(text, 0, 1, 1, 2, 0, 0, false)
+		grid.AddItem(text, 0, 1, 1, 2, 0, 0, false)
 
-	grid.AddItem(form, 1, 1, 1, 2, 0, 0, true)
+		grid.AddItem(form, 1, 1, 1, 2, 0, 0, true)
 
-	grid.AddItem(table, 2, 1, 1, 2, 0, 0, false)
+		grid.AddItem(table, 2, 1, 1, 2, 0, 0, false)
 
-	for i, button := range buttons {
-		grid.AddItem(button, 3, i+1, 1, 1, 0, 0, false)
+		for i, button := range buttons {
+			grid.AddItem(button, 3, i+1, 1, 1, 0, 0, false)
+		}
+		return grid
 	}
-
-	return NewPageComponent(insertStatsPage, grid, true, false)
 }
 
 func checkTimeInInput() func(textToCheck string, lastChar rune) bool {
@@ -281,10 +291,10 @@ func (m *UIManager) savePomodoro(form *tview.Form) func() {
 		err = m.savePomodoroFromForm(dateStart, minutes)
 		if err != nil {
 			m.logger.Error("can't create pomodoro", slog.Any("error", err))
-			m.switchToIntesrStats()
+			//m.switchToIntesrStats()
 			return
 		}
-		m.switchToDetailStats()
+		//m.switchToDetailStats()
 	}
 }
 
