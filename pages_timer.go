@@ -25,10 +25,10 @@ func (m *UIManager) NewActivePage(timerType TimerType, stopSignal chan struct{})
 	switch timerType {
 	case FocusTimer:
 		pageName = activeFocusPage
-		render = m.renderActivePage("red", "Pomodoro", FocusTimer)
+		render = m.renderActivePage("red", "Time to focus", FocusTimer)
 	case BreakTimer:
 		pageName = activeBreakPage
-		render = m.renderActivePage("green", "Break", BreakTimer)
+		render = m.renderActivePage("green", "Time to break", BreakTimer)
 	}
 
 	go m.updateUIWithTicker(stopSignal)
@@ -191,7 +191,7 @@ func (m *UIManager) renderActivePage(args ...any) func() tview.Primitive {
 
 		grid := tview.NewGrid().
 			SetRows(0, 1, 3, 1, 0, 1).
-			SetColumns(0, 15, 5, 0).
+			SetColumns(0, 10, 5, 0).
 			SetBorders(true)
 
 		grid.AddItem(breakText, 1, 1, 1, 2, 0, 0, false)
