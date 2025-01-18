@@ -26,7 +26,6 @@ func constructAllowedTransitions() map[PageName][]PageName {
 		pauseFocusPage:   {detailStatsPage, pauseBreakPage, summaryStatsPage, allTasksPage},
 		pauseBreakPage:   {detailStatsPage, pauseFocusPage, summaryStatsPage, allTasksPage},
 		detailStatsPage:  {pauseFocusPage, pauseBreakPage, insertStatsPage, summaryStatsPage, allTasksPage},
-		insertStatsPage:  {detailStatsPage},
 		summaryStatsPage: {pauseFocusPage, pauseBreakPage, insertStatsPage, detailStatsPage, allTasksPage},
 		allTasksPage:     {pauseFocusPage, pauseBreakPage, detailStatsPage, summaryStatsPage},
 	}
@@ -38,15 +37,13 @@ func (m *UIManager) constructKeyPageMap() map[tcell.Key]*Page {
 	tasksPage := m.NewTasksPage()
 	summaryPage := m.NewSummaryPage()
 	detailPage := m.NewDetailStats(-1, -1)
-	detailInsertPage := m.NewInsertDetailPage(-1, -1)
 
 	return map[tcell.Key]*Page{
-		tcell.KeyF1:    pauseFocus,
-		tcell.KeyF2:    pauseBreak,
-		tcell.KeyF3:    tasksPage,
-		tcell.KeyF4:    summaryPage,
-		tcell.KeyF5:    detailPage,
-		tcell.KeyCtrlI: detailInsertPage,
+		tcell.KeyF1: pauseFocus,
+		tcell.KeyF2: pauseBreak,
+		tcell.KeyF3: tasksPage,
+		tcell.KeyF4: summaryPage,
+		tcell.KeyF5: detailPage,
 	}
 }
 

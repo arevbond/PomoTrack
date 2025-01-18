@@ -115,6 +115,8 @@ func (m *UIManager) captureStatsInput(table *tview.Table,
 				newIndx := (prevIndx + 1) % len(buttons)
 				m.ui.SetFocus(buttons[newIndx])
 			}
+		case tcell.KeyCtrlA:
+			m.AddPageAndSwitch(m.NewInsertDetailPage(-1, -1))
 		default:
 		}
 		return event
