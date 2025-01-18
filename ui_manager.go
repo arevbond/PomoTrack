@@ -77,5 +77,5 @@ func (m *UIManager) DefaultPage() {
 }
 
 func (m *UIManager) AddPageAndSwitch(page *Page) {
-	m.pages.AddAndSwitchToPage(string(page.name), page.render(), page.resize)
+	m.pages.AddAndSwitchToPage(string(page.name), page.WithBottomPanel(), page.resize)
 }

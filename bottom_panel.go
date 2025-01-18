@@ -24,9 +24,9 @@ func hotKeysForPanel() string {
 	keys := []keyWithPage{
 		{"1", "Focus"},
 		{"2", "Break"},
-		{"3", "Detail"},
+		{"3", "Tasks"},
 		{"4", "Summary"},
-		{"5", "Tasks"},
+		{"5", "Detail"},
 	}
 
 	strs := make([]string, 0, len(keys))

@@ -13,6 +13,46 @@ import (
 
 const statisticsPageSize = 7
 
+func (m *UIManager) NewDetailStats(start, end int) *Page {
+	pomodoros, err := m.pomodoroTracker.Pomodoros()
+	if err != nil {
+		m.logger.Error("can't get pomodoros", slog.Any("error", err))
+		return nil
+	}
+
+	if start <= -1 && end <= -1 {
+		if len(pomodoros) > statisticsPageSize {
+			start = 0
+			end = statisticsPageSize
+		} else {
+			start = 0
+			end = len(pomodoros)
+		}
+	}
+
+	return NewPageComponent(detailStatsPage, true, false, m.renderDetailStatsPage(start, end, pomodoros))
+}
+
+func (m *UIManager) NewInsertDetailPage(start, end int) *Page {
+	pomodoros, err := m.pomodoroTracker.Pomodoros()
+	if err != nil {
+		m.logger.Error("can't get pomodoros", slog.Any("error", err))
+		return nil
+	}
+
+	if start <= -1 && end <= -1 {
+		if len(pomodoros) > statisticsPageSize {
+			start = 0
+			end = statisticsPageSize
+		} else {
+			start = 0
+			end = len(pomodoros)
+		}
+	}
+
+	return NewPageComponent(insertStatsPage, true, false, m.renderInsertStatsPage(start, end, pomodoros))
+}
+
 func (m *UIManager) renderDetailStatsPage(args ...any) func() tview.Primitive {
 	start := args[0].(int)
 	end := args[1].(int)

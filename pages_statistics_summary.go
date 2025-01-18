@@ -2,12 +2,28 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"strconv"
 
 	"github.com/rivo/tview"
 )
 
-// totalHours float64, totalDays int, weekdayHours [7]int
+func (m *UIManager) NewSummaryPage() *Page {
+	pomodoros, err := m.pomodoroTracker.Pomodoros()
+	if err != nil {
+		m.logger.Error("can't get all pomodoros", slog.Any("error", err))
+		return nil
+	}
+
+	render := m.renderSummaryStatsPage(
+		m.pomodoroTracker.Hours(pomodoros),
+		m.pomodoroTracker.CountDays(pomodoros),
+		m.pomodoroTracker.HoursInWeek(pomodoros),
+	)
+
+	return NewPageComponent(summaryStatsPage, true, false, render)
+}
+
 func (m *UIManager) renderSummaryStatsPage(args ...any) func() tview.Primitive {
 	totalHours := args[0].(float64)
 	totalDays := args[1].(int)

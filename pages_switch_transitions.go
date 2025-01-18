@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log/slog"
-
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -84,72 +82,6 @@ func (m *UIManager) keyboardEvents(event *tcell.EventKey) *tcell.EventKey {
 
 	m.AddPageAndSwitch(targetPage)
 	return nil
-}
-
-func (m *UIManager) NewDetailStats(start, end int) *Page {
-	pomodoros, err := m.pomodoroTracker.Pomodoros()
-	if err != nil {
-		m.logger.Error("can't get pomodoros", slog.Any("error", err))
-		return nil
-	}
-
-	if start <= -1 && end <= -1 {
-		if len(pomodoros) > statisticsPageSize {
-			start = 0
-			end = statisticsPageSize
-		} else {
-			start = 0
-			end = len(pomodoros)
-		}
-	}
-
-	return NewPageComponent(detailStatsPage, true, false, m.renderDetailStatsPage(start, end, pomodoros))
-}
-
-func (m *UIManager) NewInsertDetailPage(start, end int) *Page {
-	pomodoros, err := m.pomodoroTracker.Pomodoros()
-	if err != nil {
-		m.logger.Error("can't get pomodoros", slog.Any("error", err))
-		return nil
-	}
-
-	if start <= -1 && end <= -1 {
-		if len(pomodoros) > statisticsPageSize {
-			start = 0
-			end = statisticsPageSize
-		} else {
-			start = 0
-			end = len(pomodoros)
-		}
-	}
-
-	return NewPageComponent(insertStatsPage, true, false, m.renderInsertStatsPage(start, end, pomodoros))
-}
-
-func (m *UIManager) NewTasksPage() *Page {
-	tasks, err := m.taskTracker.Tasks()
-	if err != nil {
-		m.logger.Error("can't get tasks", slog.String("func", "renderAllTasls"), slog.Any("error", err))
-		return nil
-	}
-	renderFunc := m.renderAllTasksPage(tasks)
-	return NewPageComponent(allTasksPage, true, false, renderFunc)
-}
-
-func (m *UIManager) NewSummaryPage() *Page {
-	pomodoros, err := m.pomodoroTracker.Pomodoros()
-	if err != nil {
-		m.logger.Error("can't get all pomodoros", slog.Any("error", err))
-		return nil
-	}
-
-	render := m.renderSummaryStatsPage(
-		m.pomodoroTracker.Hours(pomodoros),
-		m.pomodoroTracker.CountDays(pomodoros),
-		m.pomodoroTracker.HoursInWeek(pomodoros),
-	)
-
-	return NewPageComponent(summaryStatsPage, true, false, render)
 }
 
 func (m *UIManager) InitStateAndKeyboardHandling() {
