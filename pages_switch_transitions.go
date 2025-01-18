@@ -77,6 +77,11 @@ func (m *UIManager) keyboardEvents(event *tcell.EventKey) *tcell.EventKey {
 		return event
 	}
 
+	// need for reload new pomodoros
+	if targetPage.name == detailStatsPage {
+		targetPage = m.NewDetailStats(-1, -1)
+	}
+
 	m.AddPageAndSwitch(targetPage)
 	return nil
 }

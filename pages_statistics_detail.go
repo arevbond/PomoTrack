@@ -14,43 +14,11 @@ import (
 const statisticsPageSize = 7
 
 func (m *UIManager) NewDetailStats(start, end int) *Page {
-	pomodoros, err := m.pomodoroTracker.Pomodoros()
-	if err != nil {
-		m.logger.Error("can't get pomodoros", slog.Any("error", err))
-		return nil
-	}
-
-	if start <= -1 && end <= -1 {
-		if len(pomodoros) > statisticsPageSize {
-			start = 0
-			end = statisticsPageSize
-		} else {
-			start = 0
-			end = len(pomodoros)
-		}
-	}
-
-	return NewPageComponent(detailStatsPage, true, m.renderDetailStatsPage(start, end, pomodoros))
+	return NewPageComponent(detailStatsPage, true, m.renderDetailStatsPage(start, end))
 }
 
 func (m *UIManager) NewInsertDetailPage(start, end int) *Page {
-	pomodoros, err := m.pomodoroTracker.Pomodoros()
-	if err != nil {
-		m.logger.Error("can't get pomodoros", slog.Any("error", err))
-		return nil
-	}
-
-	if start <= -1 && end <= -1 {
-		if len(pomodoros) > statisticsPageSize {
-			start = 0
-			end = statisticsPageSize
-		} else {
-			start = 0
-			end = len(pomodoros)
-		}
-	}
-
-	return NewPageComponent(insertStatsPage, true, m.renderInsertStatsPage(start, end, pomodoros))
+	return NewPageComponent(insertStatsPage, true, m.renderInsertStatsPage(start, end))
 }
 
 func (m *UIManager) renderDetailStatsPage(args ...any) func() tview.Primitive {
@@ -66,12 +34,9 @@ func (m *UIManager) renderDetailStatsPage(args ...any) func() tview.Primitive {
 			slog.String("func", "renderDetailStatsPage"))
 		return nil
 	}
-	pomodoros, ok := args[2].([]*Pomodoro)
-	if !ok {
-		m.logger.Error("can't extract argument for rendering detail stats page",
-			slog.String("func", "renderDetailStatsPage"))
-		return nil
-	}
+
+	var pomodoros []*Pomodoro
+	pomodoros, start, end = m.getPomodorosWithDisplayIndexs(start, end)
 
 	return func() tview.Primitive {
 		table := m.newStatsTable(start, end, pomodoros)
@@ -99,15 +64,36 @@ func (m *UIManager) renderDetailStatsPage(args ...any) func() tview.Primitive {
 	}
 }
 
+func (m *UIManager) getPomodorosWithDisplayIndexs(start, end int) ([]*Pomodoro, int, int) {
+	pomodoros, err := m.pomodoroTracker.Pomodoros()
+	if err != nil {
+		m.logger.Error("can't get pomodoros", slog.Any("error", err))
+		return nil, -1, -1
+	}
+
+	if start <= -1 || end <= -1 {
+		if len(pomodoros) > statisticsPageSize {
+			start = 0
+			end = statisticsPageSize
+		} else {
+			start = 0
+			end = len(pomodoros)
+		}
+	}
+	return pomodoros, start, end
+}
+
 func (m *UIManager) captureStatsInput(table *tview.Table,
 	buttons []*tview.Button) func(*tcell.EventKey) *tcell.EventKey {
 	return func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTAB:
-			if m.isButtonFocused(buttons) {
-				m.ui.SetFocus(table)
-			} else {
-				m.ui.SetFocus(buttons[0])
+			if len(buttons) > 0 {
+				if m.isButtonFocused(buttons) {
+					m.ui.SetFocus(table)
+				} else {
+					m.ui.SetFocus(buttons[0])
+				}
 			}
 		case tcell.KeyLeft, tcell.KeyRight:
 			if len(buttons) > 0 {
@@ -274,13 +260,9 @@ func (m *UIManager) renderInsertStatsPage(args ...any) func() tview.Primitive {
 			slog.String("func", "renderInsertStatsPage"))
 		return nil
 	}
-	pomodoros, ok := args[2].([]*Pomodoro)
-	if !ok {
-		m.logger.Error("can't extract argument for rendering insert detail page",
-			slog.String("func", "renderInsertStatsPage"))
-		return nil
-	}
 
+	var pomodoros []*Pomodoro
+	pomodoros, start, end = m.getPomodorosWithDisplayIndexs(start, end)
 	return func() tview.Primitive {
 		table := m.newStatsTable(start, end, pomodoros)
 

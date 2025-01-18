@@ -5,11 +5,24 @@ import (
 	"embed"
 	"fmt"
 	"log/slog"
+	"path/filepath"
+	"time"
 
+	"github.com/arevbond/PomoTrack/config"
 	"github.com/pressly/goose/v3"
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+type Task struct {
+	ID                 int       `db:"id"`
+	Name               string    `db:"name"`
+	PomodorosRequired  int       `db:"pomodoros_requires"`
+	PomodorosCompleted int       `db:"pomodoros_completed"`
+	IsComplete         bool      `db:"is_complete"`
+	IsActive           bool      `db:"is_active"`
+	CreateAt           time.Time `db:"created_at"`
+}
 
 //go:embed migrations/*.sql
 var embeddedMigrations embed.FS
@@ -20,8 +33,7 @@ type Storage struct {
 }
 
 func NewStorage(filename string, logger *slog.Logger) (*Storage, error) {
-	//db, err := sql.Open("sqlite3", filepath.Join(config.GetConfigDir(), filename))
-	db, err := sql.Open("sqlite3", filename)
+	db, err := sql.Open("sqlite3", filepath.Join(config.GetConfigDir(), filename))
 	if err != nil {
 		return nil, fmt.Errorf("can't connect to db: %w", err)
 	}

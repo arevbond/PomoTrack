@@ -8,20 +8,14 @@ import (
 )
 
 func (m *UIManager) NewTasksPage() *Page {
-	tasks, err := m.taskTracker.Tasks()
-	if err != nil {
-		m.logger.Error("can't get tasks", slog.String("func", "renderAllTasls"), slog.Any("error", err))
-		return nil
-	}
-	renderFunc := m.renderAllTasksPage(tasks)
+	renderFunc := m.renderAllTasksGrid()
 	return NewPageComponent(allTasksPage, true, renderFunc)
 }
 
-func (m *UIManager) renderAllTasksPage(args ...any) func() tview.Primitive {
-	tasks, ok := args[0].([]*Task)
-	if !ok {
-		m.logger.Error("can't extract argument for rendering page",
-			slog.String("func", "renderAllTasksPage"))
+func (m *UIManager) renderAllTasksGrid() func() tview.Primitive {
+	tasks, err := m.taskTracker.Tasks()
+	if err != nil {
+		m.logger.Error("can't get tasks", slog.String("func", "renderAllTasls"), slog.Any("error", err))
 		return nil
 	}
 	return func() tview.Primitive {

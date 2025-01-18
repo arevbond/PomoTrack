@@ -33,16 +33,6 @@ func NewPomodoroManager(logger *slog.Logger, storage *Storage, stateEvents chan 
 	}
 }
 
-type Task struct {
-	ID                 int       `db:"id"`
-	Name               string    `db:"name"`
-	PomodorosRequired  int       `db:"pomodoros_requires"`
-	PomodorosCompleted int       `db:"pomodoros_completed"`
-	IsComplete         bool      `db:"is_complete"`
-	IsActive           bool      `db:"is_active"`
-	CreateAt           time.Time `db:"created_at"`
-}
-
 func (tm *PomodoroManager) HandlePomodoroStateChanges() {
 	for event := range tm.statePomodoroChan {
 		if event.TimerType == FocusTimer {

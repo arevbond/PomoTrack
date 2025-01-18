@@ -23,7 +23,7 @@ type pomodoroTracker interface {
 	FinishRunningPomodoro()
 }
 
-type taskTracker interface {
+type taskManager interface {
 	Tasks() ([]*Task, error)
 	CreateTask(task *Task) error
 	DeleteTask(id int) error
@@ -40,7 +40,7 @@ type UIManager struct {
 	pomodoroTracker      pomodoroTracker
 	statePomodoroUpdates chan StateEvent
 
-	taskTracker taskTracker
+	taskTracker taskManager
 
 	allowedTransitions map[PageName][]PageName
 	keyPageMapping     map[tcell.Key]*Page
@@ -51,7 +51,7 @@ type StateEvent struct {
 	NewState  TimerState
 }
 
-func NewUIManager(l *slog.Logger, c *config.Config, e chan StateEvent, tm pomodoroTracker, tt taskTracker) *UIManager {
+func NewUIManager(l *slog.Logger, c *config.Config, e chan StateEvent, tm pomodoroTracker, tt taskManager) *UIManager {
 	stateChangeChan := make(chan StateEvent)
 	focusTimer := NewFocusTimer(c.Timer.FocusDuration)
 	breakTimer := NewBreakTimer(c.Timer.BreakDuration)
