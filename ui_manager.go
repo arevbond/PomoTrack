@@ -66,8 +66,10 @@ func NewUIManager(l *slog.Logger, c *config.Config, e chan StateEvent, tm pomodo
 		statePomodoroUpdates: e,
 		allowedTransitions:   constructAllowedTransitions(),
 		taskTracker:          tt,
+		keyPageMapping:       nil,
 	}
 	m.keyPageMapping = m.constructKeyPageMap()
+
 	return m
 }
 

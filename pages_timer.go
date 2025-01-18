@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -93,8 +94,18 @@ func (m *UIManager) handleStateFinished(timerType TimerType) {
 }
 
 func (m *UIManager) renderPausePage(args ...any) func() tview.Primitive {
-	title := args[0].(string)
-	timerType := args[1].(TimerType)
+	title, ok := args[0].(string)
+	if !ok {
+		m.logger.Error("can't extract arg", slog.String("func", "renderPausePage"),
+			slog.String("expected", "string (title)"))
+		return nil
+	}
+	timerType, ok := args[1].(TimerType)
+	if !ok {
+		m.logger.Error("can't extract arg", slog.String("func", "renderPausePage"),
+			slog.String("expected", "timerType (TimerType)"))
+		return nil
+	}
 
 	return func() tview.Primitive {
 		pauseText := tview.NewTextView().
@@ -124,11 +135,25 @@ func (m *UIManager) renderPausePage(args ...any) func() tview.Primitive {
 	}
 }
 
-// pageName PageName, color, title string, timerType TimerType
 func (m *UIManager) renderActivePage(args ...any) func() tview.Primitive {
-	color := args[0].(string)
-	title := args[1].(string)
-	timerType := args[2].(TimerType)
+	color, ok := args[0].(string)
+	if !ok {
+		m.logger.Error("can't extract arg", slog.String("func", "renderActivePage"),
+			slog.String("expected", "color (string)"))
+		return nil
+	}
+	title, ok := args[1].(string)
+	if !ok {
+		m.logger.Error("can't extract arg", slog.String("func", "renderActivePage"),
+			slog.String("expected", "title (string)"))
+		return nil
+	}
+	timerType, ok := args[2].(TimerType)
+	if !ok {
+		m.logger.Error("can't extract arg", slog.String("func", "renderActivePage"),
+			slog.String("expected", "timerType (timerType)"))
+		return nil
+	}
 
 	return func() tview.Primitive {
 		breakText := tview.NewTextView().

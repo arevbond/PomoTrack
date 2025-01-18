@@ -54,9 +54,24 @@ func (m *UIManager) NewInsertDetailPage(start, end int) *Page {
 }
 
 func (m *UIManager) renderDetailStatsPage(args ...any) func() tview.Primitive {
-	start := args[0].(int)
-	end := args[1].(int)
-	pomodoros := args[2].([]*Pomodoro)
+	start, ok := args[0].(int)
+	if !ok {
+		m.logger.Error("can't extract argument for rendering detail stats page",
+			slog.String("func", "renderDetailStatsPage"))
+		return nil
+	}
+	end, ok := args[1].(int)
+	if !ok {
+		m.logger.Error("can't extract argument for rendering detail stats page",
+			slog.String("func", "renderDetailStatsPage"))
+		return nil
+	}
+	pomodoros, ok := args[2].([]*Pomodoro)
+	if !ok {
+		m.logger.Error("can't extract argument for rendering detail stats page",
+			slog.String("func", "renderDetailStatsPage"))
+		return nil
+	}
 
 	return func() tview.Primitive {
 		table := m.newStatsTable(start, end, pomodoros)
@@ -84,10 +99,8 @@ func (m *UIManager) renderDetailStatsPage(args ...any) func() tview.Primitive {
 	}
 }
 
-func (m *UIManager) captureStatsInput(
-	table *tview.Table,
+func (m *UIManager) captureStatsInput(table *tview.Table,
 	buttons []*tview.Button) func(*tcell.EventKey) *tcell.EventKey {
-
 	return func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTAB:
@@ -247,9 +260,24 @@ func (m *UIManager) totalDuration(pomodoros []*Pomodoro) string {
 }
 
 func (m *UIManager) renderInsertStatsPage(args ...any) func() tview.Primitive {
-	start := args[0].(int)
-	end := args[1].(int)
-	pomodoros := args[2].([]*Pomodoro)
+	start, ok := args[0].(int)
+	if !ok {
+		m.logger.Error("can't extract argument for rendering insert detail page",
+			slog.String("func", "renderInsertStatsPage"))
+		return nil
+	}
+	end, ok := args[1].(int)
+	if !ok {
+		m.logger.Error("can't extract argument for rendering insert detail page",
+			slog.String("func", "renderInsertStatsPage"))
+		return nil
+	}
+	pomodoros, ok := args[2].([]*Pomodoro)
+	if !ok {
+		m.logger.Error("can't extract argument for rendering insert detail page",
+			slog.String("func", "renderInsertStatsPage"))
+		return nil
+	}
 
 	return func() tview.Primitive {
 		table := m.newStatsTable(start, end, pomodoros)

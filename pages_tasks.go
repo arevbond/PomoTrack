@@ -18,7 +18,12 @@ func (m *UIManager) NewTasksPage() *Page {
 }
 
 func (m *UIManager) renderAllTasksPage(args ...any) func() tview.Primitive {
-	tasks := args[0].([]*Task)
+	tasks, ok := args[0].([]*Task)
+	if !ok {
+		m.logger.Error("can't extract argument for rendering page",
+			slog.String("func", "renderAllTasksPage"))
+		return nil
+	}
 	return func() tview.Primitive {
 		list := tview.NewList()
 		for _, task := range tasks {

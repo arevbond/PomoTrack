@@ -5,23 +5,19 @@ import (
 )
 
 type Page struct {
-	name PageName
-	//item    tview.Primitive
+	name    PageName
 	resize  bool
 	visible bool
-
-	render func() tview.Primitive
+	render  func() tview.Primitive
 }
 
 func NewPageComponent(name PageName, resize bool, visible bool,
 	render func() tview.Primitive) *Page {
 	return &Page{
-		name: name,
-		//item:    render(),
+		name:    name,
 		resize:  resize,
 		visible: visible,
-
-		render: render,
+		render:  render,
 	}
 }
 
