@@ -14,10 +14,10 @@ import (
 const statisticsPageSize = 7
 
 func (m *UIManager) renderDetailStatsPage(args ...any) func() tview.Primitive {
-	// 		start, end int, pomodoros []*Pomodoro
 	start := args[0].(int)
 	end := args[1].(int)
 	pomodoros := args[2].([]*Pomodoro)
+
 	return func() tview.Primitive {
 		table := m.newStatsTable(start, end, pomodoros)
 
@@ -47,6 +47,7 @@ func (m *UIManager) renderDetailStatsPage(args ...any) func() tview.Primitive {
 func (m *UIManager) captureStatsInput(
 	table *tview.Table,
 	buttons []*tview.Button) func(*tcell.EventKey) *tcell.EventKey {
+
 	return func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyTAB:
@@ -91,7 +92,7 @@ func (m *UIManager) newStatsButtons(start, end int, pomodoros []*Pomodoro) []*tv
 
 	if start >= statisticsPageSize {
 		prevButton := tview.NewButton("Prev").SetSelectedFunc(func() {
-			//m.AddPageAndSwitch(m.renderDetailStatsPage(start-statisticsPageSize, start, pomodoros))
+			m.AddPageAndSwitch(m.NewDetailStats(start-statisticsPageSize, start))
 		})
 
 		buttons = append(buttons, prevButton)
@@ -99,9 +100,9 @@ func (m *UIManager) newStatsButtons(start, end int, pomodoros []*Pomodoro) []*tv
 	if end < len(pomodoros) {
 		nextButton := tview.NewButton("Next").SetSelectedFunc(func() {
 			if end+5 < len(pomodoros) {
-				//m.AddPageAndSwitch(m.renderDetailStatsPage(end, end+statisticsPageSize, pomodoros).WithBottomPanel())
+				m.AddPageAndSwitch(m.NewDetailStats(end, end+statisticsPageSize))
 			} else {
-				//m.AddPageAndSwitch(m.renderDetailStatsPage(end, len(pomodoros), pomodoros).WithBottomPanel())
+				m.AddPageAndSwitch(m.NewDetailStats(end, len(pomodoros)))
 			}
 		})
 
@@ -193,13 +194,7 @@ func (m *UIManager) removePomodoro(pomodoros []*Pomodoro, pomodoroIndx int) {
 	if err != nil {
 		m.logger.Error("Can't delete pomodoro", slog.Any("id", pomodoros[pomodoroIndx].ID))
 	}
-
-	pomodoros = append(pomodoros[:pomodoroIndx], pomodoros[pomodoroIndx+1:]...)
-	if len(pomodoros) > 5 {
-		//m.AddPageAndSwitch(m.renderDetailStatsPage(0, statisticsPageSize, pomodoros).WithBottomPanel())
-	} else {
-		//m.AddPageAndSwitch(m.renderDetailStatsPage(0, len(pomodoros), pomodoros).WithBottomPanel())
-	}
+	m.AddPageAndSwitch(m.NewDetailStats(-1, -1))
 }
 
 func (m *UIManager) totalDuration(pomodoros []*Pomodoro) string {
@@ -212,10 +207,10 @@ func (m *UIManager) totalDuration(pomodoros []*Pomodoro) string {
 }
 
 func (m *UIManager) renderInsertStatsPage(args ...any) func() tview.Primitive {
-	// start, end int, pomodoros []*Pomodoro
 	start := args[0].(int)
 	end := args[1].(int)
 	pomodoros := args[2].([]*Pomodoro)
+
 	return func() tview.Primitive {
 		table := m.newStatsTable(start, end, pomodoros)
 
@@ -291,10 +286,10 @@ func (m *UIManager) savePomodoro(form *tview.Form) func() {
 		err = m.savePomodoroFromForm(dateStart, minutes)
 		if err != nil {
 			m.logger.Error("can't create pomodoro", slog.Any("error", err))
-			//m.switchToIntesrStats()
+			m.AddPageAndSwitch(m.NewInsertDetailPage(-1, -1))
 			return
 		}
-		//m.switchToDetailStats()
+		m.AddPageAndSwitch(m.NewDetailStats(-1, -1))
 	}
 }
 

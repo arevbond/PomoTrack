@@ -39,28 +39,18 @@ func (m *UIManager) constructKeyPageMap() map[tcell.Key]*Page {
 	pauseBreak := m.NewPausePage(BreakTimer)
 	tasksPage := m.NewTasksPage()
 	summaryPage := m.NewSummaryPage()
+	detailPage := m.NewDetailStats(-1, -1)
+	detailInsertPage := m.NewInsertDetailPage(-1, -1)
 
 	return map[tcell.Key]*Page{
-		tcell.KeyF1: pauseFocus,
-		tcell.KeyF2: pauseBreak,
-		tcell.KeyF3: tasksPage,
-		tcell.KeyF4: summaryPage,
-		//tcell.KeyF3:    detailStatsPage,
-		//tcell.KeyCtrlI: insertStatsPage,
-		//tcell.KeyF4:    summaryStatsPage,
+		tcell.KeyF1:    pauseFocus,
+		tcell.KeyF2:    pauseBreak,
+		tcell.KeyF3:    tasksPage,
+		tcell.KeyF4:    summaryPage,
+		tcell.KeyF5:    detailPage,
+		tcell.KeyCtrlI: detailInsertPage,
 	}
 }
-
-//func constructKeyPageMap() map[tcell.Key]PageName {
-//	return map[tcell.Key]PageName{
-//		tcell.KeyF1:    pauseFocusPage,
-//		tcell.KeyF2:    pauseBreakPage,
-//		tcell.KeyF3:    detailStatsPage,
-//		tcell.KeyCtrlI: insertStatsPage,
-//		tcell.KeyF4:    summaryStatsPage,
-//		tcell.KeyF5:    allTasksPage,
-//	}
-//}
 
 func (m *UIManager) setKeyboardEvents() {
 	m.ui.SetInputCapture(m.keyboardEvents)
@@ -96,40 +86,45 @@ func (m *UIManager) keyboardEvents(event *tcell.EventKey) *tcell.EventKey {
 	return nil
 }
 
-//
-//func (m *UIManager) switchToDetailStats() {
-//	pomodoros, err := m.pomodoroTracker.Pomodoros()
-//	if err != nil {
-//		m.logger.Error("can't get pomodoros", slog.Any("error", err))
-//		return
-//	}
-//
-//	var page *Page
-//	if len(pomodoros) > statisticsPageSize {
-//		page = m.renderDetailStatsPage(0, statisticsPageSize, pomodoros)
-//	} else {
-//		page = m.renderDetailStatsPage(0, len(pomodoros), pomodoros)
-//	}
-//
-//	m.AddPageAndSwitch(page.WithBottomPanel())
-//}
-//
-//func (m *UIManager) switchToIntesrStats() {
-//	pomodoros, err := m.pomodoroTracker.TodayPomodoros()
-//	if err != nil {
-//		m.logger.Error("can't get today pomodoros", slog.Any("error", err))
-//		return
-//	}
-//
-//	var page *Page
-//	if len(pomodoros) > statisticsPageSize {
-//		page = m.renderInsertStatsPage(0, statisticsPageSize, pomodoros)
-//	} else {
-//		page = m.renderInsertStatsPage(0, len(pomodoros), pomodoros)
-//	}
-//
-//	m.AddPageAndSwitch(page)
-//}
+func (m *UIManager) NewDetailStats(start, end int) *Page {
+	pomodoros, err := m.pomodoroTracker.Pomodoros()
+	if err != nil {
+		m.logger.Error("can't get pomodoros", slog.Any("error", err))
+		return nil
+	}
+
+	if start <= -1 && end <= -1 {
+		if len(pomodoros) > statisticsPageSize {
+			start = 0
+			end = statisticsPageSize
+		} else {
+			start = 0
+			end = len(pomodoros)
+		}
+	}
+
+	return NewPageComponent(detailStatsPage, true, false, m.renderDetailStatsPage(start, end, pomodoros))
+}
+
+func (m *UIManager) NewInsertDetailPage(start, end int) *Page {
+	pomodoros, err := m.pomodoroTracker.Pomodoros()
+	if err != nil {
+		m.logger.Error("can't get pomodoros", slog.Any("error", err))
+		return nil
+	}
+
+	if start <= -1 && end <= -1 {
+		if len(pomodoros) > statisticsPageSize {
+			start = 0
+			end = statisticsPageSize
+		} else {
+			start = 0
+			end = len(pomodoros)
+		}
+	}
+
+	return NewPageComponent(insertStatsPage, true, false, m.renderInsertStatsPage(start, end, pomodoros))
+}
 
 func (m *UIManager) NewTasksPage() *Page {
 	tasks, err := m.taskTracker.Tasks()
