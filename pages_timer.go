@@ -24,10 +24,10 @@ func (m *UIManager) NewActivePage(timerType TimerType, stopSignal chan struct{})
 	switch timerType {
 	case FocusTimer:
 		pageName = activeFocusPage
-		render = m.renderActivePage(activeFocusPage, "red", "Pomodoro", FocusTimer)
+		render = m.renderActivePage("red", "Pomodoro", FocusTimer)
 	case BreakTimer:
 		pageName = activeBreakPage
-		render = m.renderActivePage(activeBreakPage, "green", "Break", BreakTimer)
+		render = m.renderActivePage("green", "Break", BreakTimer)
 	}
 
 	go m.updateUIWithTicker(stopSignal)
@@ -92,7 +92,6 @@ func (m *UIManager) handleStateFinished(timerType TimerType) {
 	}
 }
 
-// pageName PageName, title string, timerType TimerType
 func (m *UIManager) renderPausePage(args ...any) func() tview.Primitive {
 	title := args[0].(string)
 	timerType := args[1].(TimerType)
@@ -127,9 +126,9 @@ func (m *UIManager) renderPausePage(args ...any) func() tview.Primitive {
 
 // pageName PageName, color, title string, timerType TimerType
 func (m *UIManager) renderActivePage(args ...any) func() tview.Primitive {
-	color := args[1].(string)
-	title := args[2].(string)
-	timerType := args[3].(TimerType)
+	color := args[0].(string)
+	title := args[1].(string)
+	timerType := args[2].(TimerType)
 
 	return func() tview.Primitive {
 		breakText := tview.NewTextView().

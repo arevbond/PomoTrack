@@ -38,11 +38,13 @@ func (m *UIManager) constructKeyPageMap() map[tcell.Key]*Page {
 	pauseFocus := m.NewPausePage(FocusTimer)
 	pauseBreak := m.NewPausePage(BreakTimer)
 	tasksPage := m.NewTasksPage()
+	summaryPage := m.NewSummaryPage()
 
 	return map[tcell.Key]*Page{
 		tcell.KeyF1: pauseFocus,
 		tcell.KeyF2: pauseBreak,
 		tcell.KeyF3: tasksPage,
+		tcell.KeyF4: summaryPage,
 		//tcell.KeyF3:    detailStatsPage,
 		//tcell.KeyCtrlI: insertStatsPage,
 		//tcell.KeyF4:    summaryStatsPage,
@@ -139,22 +141,21 @@ func (m *UIManager) NewTasksPage() *Page {
 	return NewPageComponent(allTasksPage, true, false, renderFunc)
 }
 
-//
-//func (m *UIManager) switchToSummaryStats() {
-//	pomodoros, err := m.pomodoroTracker.Pomodoros()
-//	if err != nil {
-//		m.logger.Error("can't get all pomodoros", slog.Any("error", err))
-//		return
-//	}
-//
-//	summaryStatsPage := m.renderSummaryStatsPage(
-//		m.pomodoroTracker.Hours(pomodoros),
-//		m.pomodoroTracker.CountDays(pomodoros),
-//		m.pomodoroTracker.HoursInWeek(pomodoros),
-//	)
-//
-//	m.AddPageAndSwitch(summaryStatsPage.WithBottomPanel())
-//}
+func (m *UIManager) NewSummaryPage() *Page {
+	pomodoros, err := m.pomodoroTracker.Pomodoros()
+	if err != nil {
+		m.logger.Error("can't get all pomodoros", slog.Any("error", err))
+		return nil
+	}
+
+	render := m.renderSummaryStatsPage(
+		m.pomodoroTracker.Hours(pomodoros),
+		m.pomodoroTracker.CountDays(pomodoros),
+		m.pomodoroTracker.HoursInWeek(pomodoros),
+	)
+
+	return NewPageComponent(summaryStatsPage, true, false, render)
+}
 
 func (m *UIManager) InitStateAndKeyboardHandling() {
 	stopRefreshing := make(chan struct{})

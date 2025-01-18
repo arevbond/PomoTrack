@@ -72,8 +72,6 @@ func NewUIManager(l *slog.Logger, c *config.Config, e chan StateEvent, tm pomodo
 }
 
 func (m *UIManager) DefaultPage() {
-	//pauseFocus := NewPageComponent(pauseFocusPage, true, true,
-	//	m.renderPausePage( "Pomodoro", FocusTimer))
 	pauseFocus := m.NewPausePage(FocusTimer)
 	m.AddPageAndSwitch(pauseFocus)
 }
@@ -81,7 +79,3 @@ func (m *UIManager) DefaultPage() {
 func (m *UIManager) AddPageAndSwitch(page *Page) {
 	m.pages.AddAndSwitchToPage(string(page.name), page.render(), page.resize)
 }
-
-//func (m *UIManager) AddPageComponent(page *Page) {
-//	m.pages.AddPage(string(page.name), page.item, page.resize, page.visible)
-//}
