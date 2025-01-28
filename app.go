@@ -16,7 +16,7 @@ type Application struct {
 }
 
 func NewApplication(logger *slog.Logger, cfg *config.Config) *Application {
-	database, err := NewStorage(".pomotrack.UserSessions.db")
+	database, err := NewStorage(".pomotrack.UserSessions.db", logger)
 	if err != nil {
 		panic(err)
 	}
@@ -26,17 +26,20 @@ func NewApplication(logger *slog.Logger, cfg *config.Config) *Application {
 		panic(err)
 	}
 
-	stateTaskChan := make(chan StateChangeEvent)
+	stateEvents := make(chan StateEvent)
 
 	app := &Application{
 		logger:    logger,
-		uiManager: NewUIManager(logger, cfg, stateTaskChan, NewTaskManager(logger, database, stateTaskChan)),
+		uiManager: NewUIManager(logger, cfg, stateEvents, NewPomodoroManager(logger, database, stateEvents), database),
 	}
 
-	app.uiManager.DefaultTimerPages()
+	return app
+}
+
+// Run - initializaion appication background tasks.
+func (app *Application) Run() {
+	app.uiManager.DefaultPage()
 
 	go app.uiManager.InitStateAndKeyboardHandling()
-	go app.uiManager.taskTracker.HandleTaskStateChanges()
-
-	return app
+	go app.uiManager.pomodoroTracker.HandlePomodoroStateChanges()
 }
