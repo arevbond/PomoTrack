@@ -77,9 +77,10 @@ func (m *UIManager) keyboardEvents(event *tcell.EventKey) *tcell.EventKey {
 		return event
 	}
 
-	// need for reload new pomodoros
 	if targetPage.name == detailStatsPage {
-		targetPage = m.NewDetailStats(-1, -1)
+		targetPage = m.NewDetailStats(-1, -1) // need for reload new pomodoros
+	} else if targetPage.name == summaryStatsPage {
+		targetPage = m.NewSummaryPage() // need for reload summary time (include after insertion new time pertiod)
 	}
 
 	m.AddPageAndSwitch(targetPage)

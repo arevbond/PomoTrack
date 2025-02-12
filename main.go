@@ -40,7 +40,7 @@ func initLogger(logFilePath string) (*slog.Logger, error) {
 
 	//nolint:exhaustruct // default logger
 	handler := slog.NewTextHandler(file, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
+		Level: slog.LevelDebug,
 	})
 
 	logger := slog.New(handler)

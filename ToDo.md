@@ -1,0 +1,1 @@
+- Add mode with key tips on left screen side
