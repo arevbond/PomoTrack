@@ -108,7 +108,7 @@ func (m *UIManager) renderPausePage(args ...any) func() tview.Primitive {
 	}
 	// activeTask, err := m.taskTracker.ActiveTask()
 	// if err != nil {
-	//	 m.logger.Warn("can't find active task in pause timer page", slog.Any("error", err))
+	//	 m.logger.Warn("can't find active task in pause timer prettyPageName", slog.Any("error", err))
 	// }
 	// if activeTask != nil && timerType == FocusTimer {
 	//	 title = activeTask.Name

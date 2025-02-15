@@ -19,7 +19,7 @@ func NewPageComponent(name PageName, resize bool, render func() tview.Primitive)
 }
 
 func (p *Page) WithBottomPanel() tview.Primitive {
-	hotKeysPanel := constructBottomPanel()
+	hotKeysPanel := constructBottomPanel(p.name)
 	grid := tview.NewGrid().
 		SetRows(0, 1).
 		SetColumns(0, 23, 23, 0).
