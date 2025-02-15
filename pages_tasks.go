@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -94,7 +95,6 @@ func (m *UIManager) changeActiveTask(task *Task) func() {
 			return
 		}
 		m.AddPageAndSwitch(m.NewPausePage(FocusTimer))
-		return
 	}
 }
 
@@ -133,10 +133,16 @@ func (m *UIManager) renderDeletionTaskGrid() func() tview.Primitive {
 		form := tview.NewForm().
 			AddInputField("Remove task with index", "", 3, tview.InputFieldInteger, nil)
 		form.AddButton("Save", func() {
-			indxStr := form.GetFormItem(0).(*tview.InputField).GetText()
-			indx, err := strconv.Atoi(indxStr)
-			if err != nil {
-				m.logger.Error("can't get task index to delete", slog.Any("error", err))
+			indexField, ok := form.GetFormItem(0).(*tview.InputField)
+			if !ok {
+				m.logger.Warn("renderDeletionTaskGrid, come wrong type")
+				return
+			}
+			indxStr := indexField.GetText()
+
+			indx, err2 := strconv.Atoi(indxStr)
+			if err2 != nil {
+				m.logger.Error("can't get task index to delete", slog.Any("error", err2))
 				m.AddPageAndSwitch(m.NewTasksPage())
 				return
 			}
@@ -151,7 +157,6 @@ func (m *UIManager) renderDeletionTaskGrid() func() tview.Primitive {
 				return
 			}
 			m.AddPageAndSwitch(m.NewTasksPage())
-			return
 		})
 		form.AddButton("Cancel", func() {
 			m.AddPageAndSwitch(m.NewTasksPage())
@@ -172,8 +177,17 @@ func (m *UIManager) renderDeletionTaskGrid() func() tview.Primitive {
 
 func (m *UIManager) saveNewTask(form *tview.Form, isFirstTask bool) func() {
 	return func() {
-		taskName := form.GetFormItem(0).(*tview.InputField).GetText()
-		pomodorosRequiredStr := form.GetFormItem(1).(*tview.InputField).GetText()
+		taskNameField, ok := form.GetFormItem(0).(*tview.InputField)
+		if !ok {
+			return
+		}
+		taskName := taskNameField.GetText()
+
+		pmdrReqField, ok := form.GetFormItem(1).(*tview.InputField)
+		if !ok {
+			return
+		}
+		pomodorosRequiredStr := pmdrReqField.GetText()
 
 		pomodorosRequired, err := strconv.Atoi(pomodorosRequiredStr)
 		if err != nil {
@@ -185,11 +199,20 @@ func (m *UIManager) saveNewTask(form *tview.Form, isFirstTask bool) func() {
 			pomodorosRequired = 0
 		}
 
-		err = m.taskTracker.CreateTask(&Task{
-			Name:              taskName,
-			PomodorosRequired: pomodorosRequired,
-			IsActive:          isFirstTask,
-		})
+		task := &Task{
+			ID:                 -1,
+			Name:               taskName,
+			PomodorosCompleted: 0,
+			IsComplete:         false,
+			PomodorosRequired:  pomodorosRequired,
+			IsActive:           isFirstTask,
+			CreateAt:           time.Now(),
+		}
+		if task.PomodorosCompleted == task.PomodorosRequired {
+			task.IsComplete = true
+		}
+
+		err = m.taskTracker.CreateTask(task)
 		if err != nil {
 			m.logger.Error("can't create new task in form", slog.Any("error", err))
 			return

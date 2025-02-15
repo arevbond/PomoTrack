@@ -22,10 +22,11 @@ type StateManager struct {
 	stateChan    chan StateEvent
 	logger       *slog.Logger
 	timerConfig  config.TimerConfig
+	taskManager  taskManager
 }
 
 func NewStateManager(l *slog.Logger, focusT *Timer, breakT *Timer,
-	stateChan chan StateEvent, cfg config.TimerConfig) *StateManager {
+	stateChan chan StateEvent, cfg config.TimerConfig, manager taskManager) *StateManager {
 	return &StateManager{
 		logger:       l,
 		currentState: StatePaused,
@@ -33,6 +34,7 @@ func NewStateManager(l *slog.Logger, focusT *Timer, breakT *Timer,
 		breakTimer:   breakT,
 		stateChan:    stateChan,
 		timerConfig:  cfg,
+		taskManager:  manager,
 	}
 }
 
@@ -64,7 +66,17 @@ func (sm *StateManager) SetState(state TimerState, timerType TimerType) {
 	case StatePaused:
 		sm.pauseTimer(timer)
 	case StateFinished:
+		if timerType == FocusTimer {
+			sm.completePomodoro()
+		}
 		sm.finishTimer(timer)
+	}
+}
+
+func (sm *StateManager) completePomodoro() {
+	err := sm.taskManager.IncPomodoroActiveTask()
+	if err != nil {
+		sm.logger.Error("can't increment pomodoro in active task", slog.Any("error", err))
 	}
 }
 
