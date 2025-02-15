@@ -24,13 +24,13 @@ func (m *UIManager) NewInsertDetailPage(start, end int) *Page {
 func (m *UIManager) renderDetailStatsPage(args ...any) func() tview.Primitive {
 	start, ok := args[0].(int)
 	if !ok {
-		m.logger.Error("can't extract argument for rendering detail stats page",
+		m.logger.Error("can't extract argument for rendering detail stats prettyPageName",
 			slog.String("func", "renderDetailStatsPage"))
 		return nil
 	}
 	end, ok := args[1].(int)
 	if !ok {
-		m.logger.Error("can't extract argument for rendering detail stats page",
+		m.logger.Error("can't extract argument for rendering detail stats prettyPageName",
 			slog.String("func", "renderDetailStatsPage"))
 		return nil
 	}
@@ -250,13 +250,13 @@ func (m *UIManager) totalDuration(pomodoros []*Pomodoro) string {
 func (m *UIManager) renderInsertStatsPage(args ...any) func() tview.Primitive {
 	start, ok := args[0].(int)
 	if !ok {
-		m.logger.Error("can't extract argument for rendering insert detail page",
+		m.logger.Error("can't extract argument for rendering insert detail prettyPageName",
 			slog.String("func", "renderInsertStatsPage"))
 		return nil
 	}
 	end, ok := args[1].(int)
 	if !ok {
-		m.logger.Error("can't extract argument for rendering insert detail page",
+		m.logger.Error("can't extract argument for rendering insert detail prettyPageName",
 			slog.String("func", "renderInsertStatsPage"))
 		return nil
 	}

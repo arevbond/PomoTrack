@@ -106,7 +106,13 @@ func (m *UIManager) renderPausePage(args ...any) func() tview.Primitive {
 			slog.String("expected", "timerType (TimerType)"))
 		return nil
 	}
-
+	// activeTask, err := m.taskTracker.ActiveTask()
+	// if err != nil {
+	//	 m.logger.Warn("can't find active task in pause timer prettyPageName", slog.Any("error", err))
+	// }
+	// if activeTask != nil && timerType == FocusTimer {
+	//	 title = activeTask.Name
+	// }
 	return func() tview.Primitive {
 		pauseText := tview.NewTextView().
 			SetDynamicColors(true).

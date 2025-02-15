@@ -27,6 +27,9 @@ type taskManager interface {
 	Tasks() ([]*Task, error)
 	CreateTask(task *Task) error
 	DeleteTask(id int) error
+	ActiveTask() (*Task, error)
+	UpdateTask(*Task) error
+	IncPomodoroActiveTask() error
 }
 
 type UIManager struct {
@@ -60,7 +63,7 @@ func NewUIManager(l *slog.Logger, c *config.Config, e chan StateEvent, tm pomodo
 		ui:                   tview.NewApplication(),
 		pages:                tview.NewPages(),
 		logger:               l,
-		stateManager:         NewStateManager(l, focusTimer, breakTimer, stateChangeChan, c.Timer),
+		stateManager:         NewStateManager(l, focusTimer, breakTimer, stateChangeChan, c.Timer, tt),
 		stateUpdates:         stateChangeChan,
 		pomodoroTracker:      tm,
 		statePomodoroUpdates: e,

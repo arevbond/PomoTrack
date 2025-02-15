@@ -3,12 +3,11 @@ package main
 import (
 	"database/sql"
 	"embed"
+	"errors"
 	"fmt"
 	"log/slog"
-	"path/filepath"
 	"time"
 
-	"github.com/arevbond/PomoTrack/config"
 	"github.com/pressly/goose/v3"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -33,7 +32,8 @@ type Storage struct {
 }
 
 func NewStorage(filename string, logger *slog.Logger) (*Storage, error) {
-	db, err := sql.Open("sqlite3", filepath.Join(config.GetConfigDir(), filename))
+	// db, err := sql.Open("sqlite3", filepath.Join(config.GetConfigDir(), filename))
+	db, err := sql.Open("sqlite3", filename)
 	if err != nil {
 		return nil, fmt.Errorf("can't connect to db: %w", err)
 	}
@@ -186,6 +186,48 @@ func (s *Storage) DeleteTask(id int) error {
 	if err != nil {
 		s.logger.Error("can't delete task", slog.Int("id", id))
 		return fmt.Errorf("can't delete task: %w", err)
+	}
+	return nil
+}
+
+func (s *Storage) UpdateTask(task *Task) error {
+	query := `UPDATE tasks 
+				SET name = ?, pomodoros_required = ?, pomodoros_completed = ?, is_complete = ?, is_active = ?
+				WHERE id = ?;`
+	args := []any{task.Name, task.PomodorosRequired, task.PomodorosCompleted, task.IsComplete, task.IsActive, task.ID}
+	_, err := s.DB.Exec(query, args...)
+	if err != nil {
+		return fmt.Errorf("can't upate task: %w", err)
+	}
+	return nil
+}
+
+func (s *Storage) ActiveTask() (*Task, error) {
+	query := `SELECT id, name, pomodoros_required, pomodoros_completed, is_complete, is_active, created_at
+				FROM tasks
+			  WHERE is_active = true;`
+	var task Task
+	err := s.DB.QueryRow(query).Scan(&task.ID, &task.Name, &task.PomodorosRequired, &task.PomodorosCompleted,
+		&task.IsComplete, &task.IsActive, &task.CreateAt)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			s.logger.Warn("query active task, when active task not exist")
+			return nil, fmt.Errorf("can't find active task: %w", err)
+		}
+		return nil, fmt.Errorf("can't find acitve task: %w", err)
+	}
+	return &task, nil
+}
+
+func (s *Storage) IncPomodoroActiveTask() error {
+	query := `UPDATE tasks
+    			SET
+					pomodoros_completed = pomodoros_completed + 1,
+					is_complete = (pomodoros_completed + 1) >= pomodoros_required
+				WHERE is_active = true;`
+	_, err := s.DB.Exec(query)
+	if err != nil {
+		return fmt.Errorf("can't inc pomodoros in active task: %w", err)
 	}
 	return nil
 }

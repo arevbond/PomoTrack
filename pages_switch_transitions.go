@@ -13,7 +13,9 @@ const (
 	activeBreakPage PageName = "Active-Break"
 	pauseBreakPage  PageName = "Stop-Break"
 
-	allTasksPage PageName = "All-Tasks-Pages"
+	allTasksPage   PageName = "All-Tasks-Pages"
+	addNewTaskPage PageName = "Add-New-Task"
+	deleteTaskPage PageName = "Delete-Task-Page"
 
 	detailStatsPage PageName = "Detail-Statistics"
 	insertStatsPage PageName = "Insert-Statistics"
@@ -77,9 +79,16 @@ func (m *UIManager) keyboardEvents(event *tcell.EventKey) *tcell.EventKey {
 		return event
 	}
 
-	// need for reload new pomodoros
-	if targetPage.name == detailStatsPage {
-		targetPage = m.NewDetailStats(-1, -1)
+	// TODO: упростить эту хуйню
+	switch targetPage.name {
+	case detailStatsPage:
+		targetPage = m.NewDetailStats(-1, -1) // need for reload new pomodoros
+	case summaryStatsPage:
+		targetPage = m.NewSummaryPage() // need for reload summary time (include after insertion new time pertiod)
+	case allTasksPage:
+		targetPage = m.NewTasksPage()
+	case pauseBreakPage:
+		targetPage = m.NewPausePage(BreakTimer)
 	}
 
 	m.AddPageAndSwitch(targetPage)

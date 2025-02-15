@@ -27,20 +27,20 @@ func (m *UIManager) NewSummaryPage() *Page {
 func (m *UIManager) renderSummaryStatsPage(args ...any) func() tview.Primitive {
 	totalHours, ok := args[0].(float64)
 	if !ok {
-		m.logger.Error("can't extract argument for rendering summary stats page",
-			slog.String("func", "render summary stats page"))
+		m.logger.Error("can't extract argument for rendering summary stats prettyPageName",
+			slog.String("func", "render summary stats prettyPageName"))
 		return nil
 	}
 	totalDays, ok := args[1].(int)
 	if !ok {
-		m.logger.Error("can't extract argument for rendering summary stats page",
-			slog.String("func", "render summary stats page"))
+		m.logger.Error("can't extract argument for rendering summary stats prettyPageName",
+			slog.String("func", "render summary stats prettyPageName"))
 		return nil
 	}
 	weekdayHours, ok := args[2].([7]int)
 	if !ok {
-		m.logger.Error("can't extract argument for rendering summary stats page",
-			slog.String("func", "render summary stats page"))
+		m.logger.Error("can't extract argument for rendering summary stats prettyPageName",
+			slog.String("func", "render summary stats prettyPageName"))
 		return nil
 	}
 
