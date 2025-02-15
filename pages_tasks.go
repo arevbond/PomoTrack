@@ -109,6 +109,9 @@ func (m *UIManager) renderCreationTaskGrid() func() tview.Primitive {
 			AddInputField("Task name", "", 15, nil, nil).
 			AddInputField("Pomodoros", "1", 3, tview.InputFieldInteger, nil)
 		form.AddButton("Save", m.saveNewTask(form, len(tasks) == 0))
+		form.AddButton("Cancel", func() {
+			m.AddPageAndSwitch(m.NewTasksPage())
+		})
 
 		taskList := m.allTasksGrid(tasks)
 
