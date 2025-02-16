@@ -109,11 +109,25 @@ func (tm *PomodoroManager) HoursInWeek(pomodoros []*Pomodoro) [7]int {
 	}
 
 	var weekdayHours [7]int
-	firstDayIndx := time.Now().Day() - int(time.Now().Weekday()) + 1
-	lastDayIndx := time.Now().Day()
+
+	// Получаем текущую дату
+	now := time.Now()
+
+	// Определяем понедельник текущей недели
+	daysFromMonday := (int(now.Weekday()) + 6) % 7 // Преобразуем воскресенье (0) в 6, понедельник (1) в 0
+	mondayDate := now.AddDate(0, 0, -daysFromMonday)
+
+	// Устанавливаем начало (понедельник) и конец (сегодня) недели
+	weekStart := time.Date(mondayDate.Year(), mondayDate.Month(), mondayDate.Day(), 0, 0, 0, 0, now.Location())
+	weekEnd := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, now.Location())
+
 	for _, pomodoro := range pomodoros {
-		if pomodoro.StartAt.Day() >= firstDayIndx && pomodoro.StartAt.Day() <= lastDayIndx {
-			weekdayHours[(pomodoro.FinishAt.Weekday()+6)%7] += pomodoro.SecondsDuration / 3600
+		// Проверяем, попадает ли в текущую неделю
+		if (pomodoro.StartAt.After(weekStart) || pomodoro.StartAt.Equal(weekStart)) &&
+			(pomodoro.StartAt.Before(weekEnd) || pomodoro.StartAt.Equal(weekEnd)) {
+			// Преобразуем день недели (0-воскресенье в 6, 1-понедельник в 0 и т.д.)
+			weekdayIndex := (int(pomodoro.FinishAt.Weekday()) + 6) % 7
+			weekdayHours[weekdayIndex] += pomodoro.SecondsDuration / 3600
 		}
 	}
 
