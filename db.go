@@ -5,11 +5,11 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"github.com/arevbond/PomoTrack/config"
 	"log/slog"
 	"path/filepath"
 	"time"
 
+	"github.com/arevbond/PomoTrack/config"
 	"github.com/pressly/goose/v3"
 
 	_ "github.com/mattn/go-sqlite3"
