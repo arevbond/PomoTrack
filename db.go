@@ -5,7 +5,9 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"github.com/arevbond/PomoTrack/config"
 	"log/slog"
+	"path/filepath"
 	"time"
 
 	"github.com/pressly/goose/v3"
@@ -32,8 +34,7 @@ type Storage struct {
 }
 
 func NewStorage(filename string, logger *slog.Logger) (*Storage, error) {
-	// db, err := sql.Open("sqlite3", filepath.Join(config.GetConfigDir(), filename))
-	db, err := sql.Open("sqlite3", filename)
+	db, err := sql.Open("sqlite3", filepath.Join(config.GetConfigDir(), filename))
 	if err != nil {
 		return nil, fmt.Errorf("can't connect to db: %w", err)
 	}
