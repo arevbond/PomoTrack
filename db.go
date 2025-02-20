@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/arevbond/PomoTrack/config"
 	"log/slog"
-	"path/filepath"
 	"time"
 
 	"github.com/pressly/goose/v3"
